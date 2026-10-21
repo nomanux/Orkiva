@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+/* Design tokens from the Orkiva (PlanIQ UI kit) Figma file */
+@theme {
+  --font-sans: 'Manrope', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-geist: 'Geist', 'Manrope', system-ui, sans-serif;
+
+  --color-primary: #00ff3e;
+  --color-background: #f6f6f6;
+  --color-stock: #e8e8e8;
+  --color-muted: #ececec;
+  --color-grey: #8d8d8d;
+  --color-grey-text: #666d80;
+  --color-ink: #0d0d12;
+  --color-ink-soft: #161618;
+  --color-secondary-400: #5b5a64;
+  --color-done: #8cb4b9;
+  --color-track: #d9d9d9;
+  --color-danger: #dc2626;
+  --color-text-primary: #2e2e2e;
+
+  /* Auth screens */
+  --color-strong-950: #0e121b;
+  --color-soft-400: #99a0ae;
+  --color-required: #e93544;
+  --color-stroke-soft: #e1e4ea;
+  --color-button-text: #17191c;
+  --color-dark-gray-50: #cccccc;
+
+  /* Settings screens (Figma "Greyscale" scale) */
+  --color-gs-25: #f6f8fa;
+  --color-gs-50: #eceff3;
+  --color-gs-100: #dfe1e7;
+  --color-gs-400: #818898;
+  --color-gs-300: #a4acb9;
+  --color-error: #df1c41;
+  --color-error-25: #fadbe1;
+  --color-error-50: #fff0f3;
+  --color-primary-dark: #009925;
+}
+
+body {
+  @apply bg-background font-sans text-black antialiased;
+}

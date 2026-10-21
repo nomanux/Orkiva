@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Linear / Messages, Conversation / Chat Round Dots" clip-path="url(#clip0_0_10)">
+<path id="Vector" d="M3.33333 5H3.33708M4.99625 5H5M6.66292 5H6.66667" stroke-linecap="round" stroke-linejoin="round" stroke="black"/>
+<path id="Vector_2" d="M9.16667 5C9.16667 7.30119 7.30118 9.16667 5 9.16667C4.33346 9.16667 3.70348 9.01016 3.1448 8.73189C2.99633 8.65794 2.82664 8.63333 2.66641 8.6762L1.73889 8.92437C1.33625 9.0321 0.967894 8.66374 1.07563 8.26111L1.3238 7.33359C1.36667 7.17336 1.34205 7.00366 1.26811 6.8552C0.989837 6.29652 0.83333 5.66654 0.83333 5C0.83333 2.69881 2.69881 0.833333 5 0.833333C7.30118 0.833333 9.16667 2.69881 9.16667 5Z" stroke="black"/>
+</g>
+<defs>
+<clipPath id="clip0_0_10">
+<rect width="10" height="10" fill="white"/>
+</clipPath>
+</defs>
+</svg>
