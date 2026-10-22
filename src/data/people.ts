@@ -1,4 +1,4 @@
-import james from '../assets/dashboard/avatar-masud.png'
+import james from '../assets/dashboard/avatar-james.png'
 import daniel from '../assets/projects/member-1.png'
 import ryan from '../assets/projects/member-2.png'
 import marcus from '../assets/projects/member-3.png'

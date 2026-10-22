@@ -4,7 +4,7 @@ import logo from "../../assets/brand/orkiva-logo.svg";
 import searchCircle from "../../assets/dashboard/search-circle.svg";
 import searchIcon from "../../assets/dashboard/search.svg";
 import bellIcon from "../../assets/settings/bell.svg";
-import avatar from "../../assets/dashboard/avatar-masud.png";
+import avatar from "../../assets/dashboard/avatar-james.png";
 import chevronDown from "../../assets/dashboard/chevron-down.svg";
 import { NAV_ITEMS } from "./navItems";
 import { LogoutModal } from "../ui/LogoutModal";

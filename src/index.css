@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Design tokens from the Orkiva (PlanIQ UI kit) Figma file */
+/* Orkiva design tokens */
 @theme {
   /* Softer than pure black everywhere text-black / bg-black is used */
   --color-black: #1e293b; /* slate-800 */

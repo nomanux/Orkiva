@@ -100,6 +100,10 @@ src/
 
 To change the theme, edit the `--color-*` tokens in `src/index.css`. Every page picks them up.
 
-## Credits
+## Deploying to Vercel
 
-The UI is based on the PlanIQ UI kit (Figma), rebranded as Orkiva.
+1. Push the repo to GitHub and choose **Add New → Project** in Vercel.
+2. Import the repo. Vercel detects Vite automatically (build `npm run build`, output `dist`).
+3. Deploy. `vercel.json` already rewrites every route to `index.html` so deep links like `/projects` work, and caches hashed assets for a year.
+
+No environment variables are needed.
