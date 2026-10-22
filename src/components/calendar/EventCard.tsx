@@ -1,6 +1,7 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { useDismiss } from '../../hooks/useDismiss'
 import { formatTime, meetingState, type Meeting } from '../../data/meetingsStore'
+import { personById } from '../../data/people'
 import googleMeet from '../../assets/calendar/google-meet.svg'
 import googleCalendar from '../../assets/calendar/google-calendar.svg'
 import menuDots from '../../assets/calendar/menu-dots.svg'
@@ -21,12 +22,24 @@ export function AppIcon({ app, size = 36 }: { app: Meeting['app']; size?: number
   )
 }
 
-export function AttendeeStack({ photos, size = 24 }: { photos: string[]; size?: number }) {
+export function AttendeeStack({ ids, size = 24, max = 4 }: { ids: string[]; size?: number; max?: number }) {
+  const people = ids.map(personById).filter((p) => !!p)
+  const extra = people.length - max
   return (
-    <span className="flex">
-      {photos.map((p, i) => (
-        <img key={i} src={p} alt="" width={size} height={size} className="rounded-full ring-2 ring-background" style={{ marginLeft: i ? -size * 0.3 : 0 }} />
+    <span className="flex items-center" aria-label={`Attendees: ${people.map((p) => p.name).join(', ')}`}>
+      {people.slice(0, max).map((p, i) => (
+        <img
+          key={p.id}
+          src={p.avatar}
+          alt=""
+          title={p.name}
+          width={size}
+          height={size}
+          className="rounded-full object-cover ring-2 ring-background"
+          style={{ marginLeft: i ? -size * 0.3 : 0, width: size, height: size }}
+        />
       ))}
+      {extra > 0 && <span className="ml-1 text-[11px] font-semibold text-black/50">+{extra}</span>}
     </span>
   )
 }
@@ -78,7 +91,7 @@ export function EventCard({ meeting, onJoin, onDelete, style }: EventCardProps) 
           {formatTime(meeting.start, true)} - {formatTime(meeting.end, true)}
         </p>
       </div>
-      <AttendeeStack photos={meeting.attendees} />
+      <AttendeeStack ids={meeting.attendeeIds} />
       <div className="mt-auto">
         {state === 'live' && !cancelled ? (
           <button

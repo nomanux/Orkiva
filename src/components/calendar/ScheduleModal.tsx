@@ -1,8 +1,12 @@
 import { useId, useState, type FormEvent } from 'react'
 import { Modal, ModalFooter, ModalHeader, PrimaryButton, SecondaryButton } from '../ui/Modal'
-import { DateField, SelectField, TextAreaField, TextField } from '../forms/FormControls'
+import { DateField, MemberSelect, SelectField, TextAreaField, TextField } from '../forms/FormControls'
 import type { DateValue } from '../overlays/CalendarModal'
-import { MEETING_STATUSES, formatTime, meetingsStore, type MeetingStatus, ATTENDEE_PHOTOS } from '../../data/meetingsStore'
+import { MEETING_STATUSES, formatTime, meetingsStore, type MeetingStatus } from '../../data/meetingsStore'
+import { ME, PEOPLE } from '../../data/people'
+import { useProjects } from '../../data/projects'
+
+const NO_PROJECT = 'No project'
 
 // Every half hour from 07:00 to 19:30, labelled "14:00 (2:00 PM)" as in the design.
 const TIMES = Array.from({ length: 26 }, (_, i) => {
@@ -31,6 +35,9 @@ function ScheduleForm({ titleId, onClose, onSaved, defaultDate }: Omit<ScheduleM
   const [duration, setDuration] = useState('1 hour')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<MeetingStatus | ''>('Scheduled')
+  const [attendeeIds, setAttendeeIds] = useState<string[]>([ME])
+  const projects = useProjects().filter((p) => p.status !== 'Completed')
+  const [projectName, setProjectName] = useState(NO_PROJECT)
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -46,7 +53,8 @@ function ScheduleForm({ titleId, onClose, onSaved, defaultDate }: Omit<ScheduleM
       description,
       status,
       app: 'meet',
-      attendees: ATTENDEE_PHOTOS.slice(0, 3),
+      attendeeIds,
+      projectId: projects.find((p) => p.name === projectName)?.id,
     })
     onSaved?.(title.trim())
   }
@@ -76,6 +84,14 @@ function ScheduleForm({ titleId, onClose, onSaved, defaultDate }: Omit<ScheduleM
           onChange={(e) => setStatus(e.target.value as MeetingStatus)}
           options={MEETING_STATUSES}
           placeholder="Select status"
+        />
+        <MemberSelect label="Attendees" required people={PEOPLE} value={attendeeIds} onChange={setAttendeeIds} placeholder="Add attendees" />
+        <SelectField
+          label="Project"
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          options={[NO_PROJECT, ...projects.map((p) => p.name)]}
+          placeholder={NO_PROJECT}
         />
       </div>
       <ModalFooter>

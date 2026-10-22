@@ -1,29 +1,51 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { AuthLayout } from '../../components/auth/AuthLayout'
 import { FooterPrompt, GoogleButton, PrimaryButton, TextField } from '../../components/auth/FormControls'
+import { DEMO_EMAIL, DEMO_PASSWORD, getSession, signIn } from '../../data/session'
 
 export function Login() {
   const navigate = useNavigate()
+  const { state } = useLocation() as { state: { from?: string } | null }
   const [remember, setRemember] = useState(false)
+  const [error, setError] = useState('')
+  const [knownEmail] = useState(() => getSession().profile.email)
 
-  const onSubmit = (e: FormEvent) => {
+  const enter = (email: string) => {
+    signIn(email)
+    navigate(state?.from ?? '/', { replace: true })
+  }
+
+  // Demo auth: any email with a password of 6+ characters signs in. Nothing leaves the browser.
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    navigate('/')
+    const data = new FormData(e.currentTarget)
+    if (String(data.get('password')).length < 6) {
+      setError('Password must be at least 6 characters.')
+      return
+    }
+    enter(String(data.get('email')).trim())
   }
 
   return (
-    <AuthLayout title="Login to your account" subtitle="Unlock Your Progress - Securely Access Your Project Hub!">
+    <AuthLayout title="Login to your account" subtitle="Demo account is pre-filled — just press Sign In.">
       <form onSubmit={onSubmit} className="flex w-full flex-col gap-7">
         <div className="flex w-full flex-col gap-4">
-          <TextField label="Email Address" type="email" name="email" placeholder="Email" autoComplete="email" />
+          <TextField label="Email Address" type="email" name="email" placeholder="Email" autoComplete="email" defaultValue={knownEmail} />
           <TextField
             label="Password"
             type="password"
             name="password"
             placeholder="Password"
             autoComplete="current-password"
+            defaultValue={DEMO_PASSWORD}
+            onChange={() => setError('')}
           />
+          {error && (
+            <p role="alert" className="-mt-2 text-[14px] font-medium text-required">
+              {error}
+            </p>
+          )}
           <div className="flex items-center justify-between text-[16px] leading-[1.5] font-medium tracking-[-0.176px]">
             <label className="flex cursor-pointer items-center gap-2 text-soft-400">
               <input
@@ -52,7 +74,7 @@ export function Login() {
 
         <div className="flex w-full flex-col gap-3">
           <PrimaryButton>Sign In</PrimaryButton>
-          <GoogleButton onClick={() => navigate('/')} />
+          <GoogleButton onClick={() => enter(DEMO_EMAIL)} />
           <FooterPrompt text="Don’t have an account?" linkText="Sign up" to="/signup" />
         </div>
       </form>

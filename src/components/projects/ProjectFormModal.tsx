@@ -24,6 +24,7 @@ export function ProjectFormModal({ open, onClose, onSave }: ProjectFormModalProp
 
 function ProjectForm({ titleId, onClose, onSave }: Omit<ProjectFormModalProps, 'open'> & { titleId: string }) {
   const [name, setName] = useState('')
+  const [client, setClient] = useState('')
   const [type, setType] = useState('')
   const [dates, setDates] = useState<DateValue>()
   const [description, setDescription] = useState('')
@@ -34,6 +35,7 @@ function ProjectForm({ titleId, onClose, onSave }: Omit<ProjectFormModalProps, '
     e.preventDefault()
     onSave({
       name: name.trim(),
+      client: client.trim() || undefined,
       type,
       startDate: dates?.start,
       endDate: dates?.end,
@@ -48,6 +50,7 @@ function ProjectForm({ titleId, onClose, onSave }: Omit<ProjectFormModalProps, '
       <ModalHeader id={titleId} title="Create New Project" onClose={onClose} className="h-14" />
       <div className="flex flex-col gap-3.5 overflow-y-auto p-5">
         <TextField label="Project Name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. SiteCraft" />
+        <TextField label="Client" value={client} onChange={(e) => setClient(e.target.value)} placeholder="e.g. Primor Health (optional)" />
         <SelectField
           label="Project Type"
           required

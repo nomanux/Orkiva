@@ -1,11 +1,7 @@
-import { useSyncExternalStore } from 'react'
-import { toISO } from '../lib/dates'
-import person1 from '../assets/calendar/person-1.png'
-import person2 from '../assets/calendar/person-2.png'
-import person3 from '../assets/calendar/person-3.png'
-import person4 from '../assets/calendar/person-4.png'
-import person5 from '../assets/calendar/person-5.png'
-import person6 from '../assets/calendar/person-6.png'
+import { addDays, toISO } from '../lib/dates'
+import { createStore, uid } from '../lib/store'
+import { notify } from './notifications'
+import { ME } from './people'
 
 export const MEETING_STATUSES = ['Scheduled', 'Tentative', 'Cancelled'] as const
 export type MeetingStatus = (typeof MEETING_STATUSES)[number]
@@ -20,10 +16,10 @@ export type Meeting = {
   status: MeetingStatus
   /** Which app hosts it: drives the icon on the event card. */
   app: 'meet' | 'calendar'
-  attendees: string[]
+  /** Person ids from `PEOPLE`. */
+  attendeeIds: string[]
+  projectId?: string
 }
-
-export const ATTENDEE_PHOTOS = [person1, person2, person3, person4, person5, person6]
 
 /** Monday of the week containing `d`. */
 export function weekStart(d: Date) {
@@ -31,45 +27,61 @@ export function weekStart(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - day)
 }
 
-const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
+type Row = [title: string, day: number, start: string, end: string, app: Meeting['app'], attendeeIds: string[], description: string, extra?: Partial<Meeting>]
 
-// Seeded relative to the current week so the calendar always has something to show.
-const monday = weekStart(new Date())
-const seed: Meeting[] = [
-  { id: 'm1', title: 'Weekly Stand Up', date: toISO(monday), start: '08:00', end: '09:00', app: 'meet', status: 'Scheduled', description: 'Quick sync on yesterday, today and blockers.', attendees: [person1, person2, person3, person4] },
-  { id: 'm2', title: 'Sprint Planning', date: toISO(addDays(monday, 1)), start: '09:30', end: '10:30', app: 'calendar', status: 'Scheduled', description: 'Plan the next two-week sprint.', attendees: [person5, person6] },
-  { id: 'm3', title: 'Weekly Stand Up', date: toISO(addDays(monday, 2)), start: '10:30', end: '11:30', app: 'meet', status: 'Scheduled', description: 'Quick sync on yesterday, today and blockers.', attendees: [person1, person2, person3, person4] },
-  { id: 'm4', title: 'Sprint Planning', date: toISO(addDays(monday, 3)), start: '08:45', end: '09:45', app: 'calendar', status: 'Tentative', description: 'Refine the backlog with product.', attendees: [person5, person6] },
-  { id: 'm5', title: 'Weekly Stand Up', date: toISO(addDays(monday, 4)), start: '11:30', end: '12:30', app: 'meet', status: 'Scheduled', description: 'Quick sync on yesterday, today and blockers.', attendees: [person1, person2, person3, person4] },
-  { id: 'm6', title: 'Meeting with Arc Company', date: toISO(new Date()), start: '14:00', end: '16:00', app: 'meet', status: 'Scheduled', description: 'Walk Arc through the new checkout flow.', attendees: [person2, person4, person6] },
-  { id: 'm7', title: 'Design Review Meeting', date: toISO(addDays(monday, 4)), start: '14:00', end: '15:00', app: 'calendar', status: 'Scheduled', description: 'Review and finalize the homepage and dashboard design with the UI/UX team.', attendees: [person1, person3, person5] },
-  { id: 'm8', title: 'Client Retrospective', date: toISO(addDays(monday, -3)), start: '15:00', end: '16:00', app: 'meet', status: 'Scheduled', description: 'What went well on the Primor launch.', attendees: [person2, person3] },
-]
+// Seeded relative to the current week (day 0 = Monday) so the calendar always has something to show.
+const seed = (): Meeting[] => {
+  const monday = weekStart(new Date())
+  const today = (new Date().getDay() + 6) % 7
+  const rows: Row[] = [
+    ['Weekly Stand Up', -7, '09:00', '09:30', 'meet', ['marcus', 'ryan', 'michael', 'amara'], 'Quick sync on yesterday, today and blockers.'],
+    ['Primor sprint review', -5, '15:00', '16:00', 'meet', ['marcus', 'ethan', 'ryan', ME], 'Demo the booking flow to Primor’s product team.', { projectId: 'p-primor' }],
+    ['Client retrospective', -3, '15:00', '16:00', 'meet', ['daniel', 'nina', ME], 'What went well on the Sulivan homepage launch.', { projectId: 'p-sulivan' }],
+    ['Weekly Stand Up', 0, '08:00', '09:00', 'meet', ['marcus', 'ryan', 'michael', 'amara'], 'Quick sync on yesterday, today and blockers.'],
+    ['Sprint Planning', 1, '09:30', '10:30', 'calendar', ['daniel', 'michael', 'ryan'], 'Plan the next two-week sprint for the analytics dashboard.', { projectId: 'p-analytics' }],
+    ['Brand review with Trustworth', 1, '13:00', '14:00', 'meet', ['ethan', 'leila', 'olivia'], 'Present logo round 2 and the new colour system.', { projectId: 'p-trustworth' }],
+    ['Weekly Stand Up', 2, '10:30', '11:30', 'meet', ['marcus', 'ryan', 'michael', 'amara'], 'Quick sync on yesterday, today and blockers.'],
+    ['Backlog refinement', 3, '08:45', '09:45', 'calendar', ['marcus', 'amara'], 'Refine the Primor backlog with product.', { status: 'Tentative', projectId: 'p-primor' }],
+    ['Meeting with Arc Company', today, '14:00', '16:00', 'meet', ['olivia', 'michael', ME], 'Walk Arc through the new checkout flow.'],
+    ['Weekly Stand Up', 4, '11:30', '12:30', 'meet', ['marcus', 'ryan', 'michael', 'amara'], 'Quick sync on yesterday, today and blockers.'],
+    ['Design Review Meeting', 4, '14:00', '15:00', 'calendar', ['ethan', 'leila', 'sarah'], 'Review and finalise the homepage and dashboard designs with the UI/UX team.', { projectId: 'p-analytics' }],
+    ['Atlas API check-in', 4, '16:00', '16:30', 'meet', ['michael', ME], 'Check if Atlas has shipped the v3 API. Cancelled: no update yet.', { status: 'Cancelled', projectId: 'p-atlas' }],
+    ['Weekly Stand Up', 7, '09:00', '09:30', 'meet', ['marcus', 'ryan', 'michael', 'amara'], 'Quick sync on yesterday, today and blockers.'],
+    ['YellyBox onboarding workshop', 8, '10:00', '12:00', 'meet', ['sarah', 'leila', 'arjun'], 'Map the first-order journey with YellyBox’s growth team.', { projectId: 'p-yellybox' }],
+    ['Campaign creative review', 9, '15:00', '16:00', 'calendar', ['olivia', 'nina', ME], 'Pick the final ad creatives for launch week.', { projectId: 'p-campaign' }],
+    ['1:1 with Marcus', 10, '11:00', '11:30', 'calendar', ['marcus', ME], 'Delivery risks and hiring plan.', { status: 'Tentative' }],
+  ]
+  return rows.map(([title, day, start, end, app, attendeeIds, description, extra], i) => ({
+    id: `m${i + 1}`,
+    title,
+    date: toISO(addDays(monday, day)),
+    start,
+    end,
+    app,
+    attendeeIds,
+    description,
+    status: 'Scheduled',
+    ...extra,
+  }))
+}
 
-let meetings = seed
-const listeners = new Set<() => void>()
-const emit = () => listeners.forEach((l) => l())
+const store = createStore('meetings', seed)
 
 export const meetingsStore = {
+  get: store.get,
   add(m: Omit<Meeting, 'id'>) {
-    meetings = [...meetings, { ...m, id: `m${Date.now()}` }]
-    emit()
+    store.set((list) => [...list, { ...m, id: uid('m') }])
+    notify({ kind: 'meeting', title: `Meeting scheduled: ${m.title}`, body: `${m.date} at ${formatTime(m.start)} with ${m.attendeeIds.length} attendees.`, link: '/meetings' })
   },
   remove(id: string) {
-    meetings = meetings.filter((m) => m.id !== id)
-    emit()
+    store.set((list) => list.filter((m) => m.id !== id))
+  },
+  update(id: string, patch: Partial<Meeting>) {
+    store.set((list) => list.map((m) => (m.id === id ? { ...m, ...patch } : m)))
   },
 }
 
-export function useMeetings() {
-  return useSyncExternalStore(
-    (l) => {
-      listeners.add(l)
-      return () => listeners.delete(l)
-    },
-    () => meetings,
-  )
-}
+export const useMeetings = store.use
 
 /** "14:00" → minutes since midnight. */
 export const minutes = (hhmm: string) => {
@@ -94,6 +106,12 @@ export function meetingState(m: Meeting, now = new Date()): 'live' | 'upcoming' 
   if (t < minutes(m.start) - 10) return 'upcoming'
   if (t > minutes(m.end)) return 'ended'
   return 'live'
+}
+
+/** The meeting happening now, or else the next one that isn't cancelled. */
+export function nextMeeting(list: Meeting[], now = new Date()) {
+  const open = [...list].filter((m) => m.status !== 'Cancelled').sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`))
+  return open.find((m) => meetingState(m, now) === 'live') ?? open.find((m) => meetingState(m, now) === 'upcoming')
 }
 
 export { addDays }

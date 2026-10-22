@@ -6,30 +6,40 @@ import { EndedTaskCard, PendingTaskCard, TotalTaskCard } from '../components/das
 import { TaskList } from '../components/dashboard/TaskList'
 import { TaskStatistics } from '../components/dashboard/TaskStatistics'
 import { UploadCard } from '../components/dashboard/UploadCard'
-import { stats, user } from '../data/dashboard'
+import { useTasks } from '../data/projects'
+import { useSession, shortName } from '../data/session'
+import { taskTotals } from '../data/insights'
 
 export function Dashboard() {
+  const { profile } = useSession()
+  const totals = taskTotals(useTasks())
+  const greeting = totals.overdue
+    ? `${totals.overdue} task${totals.overdue > 1 ? 's are' : ' is'} overdue — let’s get back on track.`
+    : totals.dueToday
+      ? `${totals.dueToday} task${totals.dueToday > 1 ? 's' : ''} due today. Ready to conquer your projects?`
+      : 'Ready to conquer your projects?'
+
   return (
     <>
       <section className="mt-9 flex flex-col gap-[10.25px] whitespace-nowrap">
-        <p className="text-[22px] leading-[1.5] tracking-[-0.44px] text-secondary-400">Ready to conquer your projects?</p>
-        <h1 className="text-[42px] leading-[1.2] font-bold tracking-[-2.52px]">Welcome Back, {user.name} 👋</h1>
+        <p className="text-[22px] leading-[1.5] tracking-[-0.44px] text-secondary-400">{greeting}</p>
+        <h1 className="text-[42px] leading-[1.2] font-bold tracking-[-2.52px]">Welcome Back, {shortName(profile.name)} 👋</h1>
       </section>
 
       <div className="mt-[42px] flex gap-[10px]">
         <div className="flex min-w-0 flex-1 flex-col gap-[10px]">
           <div className="flex gap-[10px]">
-            <TotalTaskCard count={stats.total} />
-            <PendingTaskCard count={stats.pending} />
-            <EndedTaskCard count={stats.ended} />
+            <TotalTaskCard count={totals.total} />
+            <PendingTaskCard count={totals.pending} />
+            <EndedTaskCard count={totals.done} />
           </div>
           <div className="flex gap-[10px]">
             <ProjectOverview className="min-w-0 flex-[476]" />
             <div className="flex min-w-0 flex-[500] flex-col gap-[10px]">
               <TaskStatistics />
               <div className="flex gap-[10px]">
-                <UploadCard title="In Progress" fileName="Project Brief. txt" fileSize="24.19 KB" percent={43} fill={143 / 213} />
-                <UploadCard title="Completed" fileName="Project Brief. txt" fileSize="24.19 KB" percent={100} fill={1} />
+                <UploadCard title="In Progress" />
+                <UploadCard title="Completed" />
               </div>
             </div>
           </div>

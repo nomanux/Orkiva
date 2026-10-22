@@ -1,21 +1,21 @@
 import { useRef, useState } from 'react'
 import { useDismiss } from '../../hooks/useDismiss'
 import { formatToday } from '../../lib/dates'
-import type { Project } from '../../data/projects'
+import { formatShort } from '../../lib/dates'
+import { personById } from '../../data/people'
+import { percent } from '../../data/insights'
+import type { Project, Task } from '../../data/projects'
 import chevronDown from '../../assets/projects/chevron-down.svg'
 import sortIcon from '../../assets/projects/sort.svg'
 import plusIcon from '../../assets/projects/plus.svg'
-import team1 from '../../assets/projects/team-1.png'
-import team2 from '../../assets/projects/team-2.png'
-import team3 from '../../assets/projects/team-3.png'
-import team4 from '../../assets/projects/team-4.png'
-import team5 from '../../assets/projects/team-5.png'
 
-const TEAM = [team1, team2, team3, team4, team5]
+const MAX_FACES = 5
+const STATUS_DOT = { Active: 'bg-primary', 'On Hold': 'bg-[#fbd93c]', Completed: 'bg-gs-300' }
 
 type BoardToolbarProps = {
   projects: Project[]
-  currentId: string
+  project: Project
+  tasks: Task[]
   onSelect: (id: string) => void
   onCreateProject: () => void
   onDeleteProject: () => void
@@ -26,7 +26,8 @@ type BoardToolbarProps = {
 
 export function BoardToolbar({
   projects,
-  currentId,
+  project,
+  tasks,
   onSelect,
   onCreateProject,
   onDeleteProject,
@@ -37,8 +38,11 @@ export function BoardToolbar({
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   useDismiss(menuRef, menuOpen, () => setMenuOpen(false))
-  const current = projects.find((p) => p.id === currentId)
+  const currentId = project.id
   const [now] = useState(() => new Date())
+  const team = project.memberIds.map(personById).filter((p) => !!p)
+  const done = percent(tasks.filter((t) => t.status === 'Done').length, tasks.length)
+  const manager = personById(project.managerId ?? '')
 
   const item = 'block w-full cursor-pointer px-4 py-2.5 text-left text-[14px] font-medium hover:bg-background'
 
@@ -50,7 +54,7 @@ export function BoardToolbar({
       </div>
       <span className="mx-4 h-12 w-px bg-stock" aria-hidden />
 
-      <div ref={menuRef} className="relative">
+      <div ref={menuRef} className="relative min-w-0">
         <button
           type="button"
           aria-haspopup="menu"
@@ -59,11 +63,18 @@ export function BoardToolbar({
           className="flex cursor-pointer items-center gap-3 leading-[1.2] text-black"
         >
           <span className="text-[20px] font-semibold tracking-[-0.4px]">Board -</span>
-          <span className="text-[16px] font-medium tracking-[-0.32px]">{current?.name}</span>
+          <span className="text-[16px] font-medium tracking-[-0.32px]">{project.name}</span>
           <img src={chevronDown} alt="" width={16} height={16} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
         </button>
+        <p className="mt-1.5 flex items-center gap-1.5 truncate text-[13px] leading-[1.2] whitespace-nowrap text-grey-text">
+          <span className={`size-2 rounded-full ${STATUS_DOT[project.status ?? 'Active']}`} aria-hidden />
+          {project.status ?? 'Active'}
+          {project.client && ` · ${project.client}`} · {done}% done
+          {project.endDate && ` · ends ${formatShort(project.endDate)}`}
+          {manager && ` · PM ${manager.name}`}
+        </p>
         {menuOpen && (
-          <ul role="menu" className="absolute top-full left-0 z-20 mt-2 w-60 overflow-hidden rounded-xl bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+          <ul role="menu" className="absolute top-8 left-0 z-20 max-h-[420px] w-72 overflow-y-auto rounded-xl bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
             {projects.map((p) => (
               <li key={p.id} role="none">
                 <button
@@ -74,9 +85,10 @@ export function BoardToolbar({
                     onSelect(p.id)
                     setMenuOpen(false)
                   }}
-                  className={`${item} ${p.id === currentId ? 'font-semibold text-ink' : 'text-grey-text'}`}
+                  className={`${item} flex items-center gap-2 ${p.id === currentId ? 'font-semibold text-ink' : 'text-grey-text'}`}
                 >
-                  {p.name}
+                  <span className={`size-2 shrink-0 rounded-full ${STATUS_DOT[p.status ?? 'Active']}`} aria-hidden />
+                  <span className="truncate">{p.name}</span>
                 </button>
               </li>
             ))}
@@ -112,10 +124,23 @@ export function BoardToolbar({
         )}
       </div>
 
-      <div className="ml-auto flex items-center" aria-label="Team members">
-        {TEAM.map((src, i) => (
-          <img key={src} src={src} alt="" width={46} height={46} className={`rounded-full ${i < TEAM.length - 1 ? '-mr-5' : ''}`} />
+      <div className="ml-auto flex items-center" aria-label={`Team: ${team.map((p) => p.name).join(', ')}`}>
+        {team.slice(0, MAX_FACES).map((p, i, shown) => (
+          <img
+            key={p.id}
+            src={p.avatar}
+            alt=""
+            title={`${p.name} — ${p.role}`}
+            width={46}
+            height={46}
+            className={`size-[46px] rounded-full object-cover ring-2 ring-white ${i < shown.length - 1 || team.length > MAX_FACES ? '-mr-5' : ''}`}
+          />
         ))}
+        {team.length > MAX_FACES && (
+          <span className="relative flex size-[46px] items-center justify-center rounded-full bg-background text-[14px] font-semibold ring-2 ring-white">
+            +{team.length - MAX_FACES}
+          </span>
+        )}
       </div>
       <span className="mr-4 ml-[42px] h-12 w-px bg-stock" aria-hidden />
 

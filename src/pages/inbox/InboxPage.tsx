@@ -5,14 +5,14 @@ import { VideoCallModal } from '../../components/inbox/VideoCallModal'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { Toast } from '../../components/ui/Toast'
 import { useToast } from '../../hooks/useToast'
-import { CHATS, type Chat } from '../../data/inbox'
+import { blockChat, updateChat, useChats, type Chat } from '../../data/inbox'
 import trashIcon from '../../assets/overlays/trash.svg'
 
 const DEFAULT_SETTINGS: ChatSettings = { muted: false, restricted: false }
 
 export function InboxPage() {
-  const [chats, setChats] = useState<Chat[]>(CHATS)
-  const [selectedId, setSelectedId] = useState(CHATS[0].id)
+  const chats = useChats()
+  const [selectedId, setSelectedId] = useState<string | undefined>(chats[0]?.id)
   const [settings, setSettings] = useState<Record<string, ChatSettings>>({})
   const [preferences, setPreferences] = useState({ activeStatus: true, notificationSound: false, doNotDisturb: true })
   const [videoOpen, setVideoOpen] = useState(false)
@@ -21,7 +21,9 @@ export function InboxPage() {
 
   const chat = chats.find((c) => c.id === selectedId) ?? chats[0]
   const update = (id: string, patch: Partial<Chat> | ((c: Chat) => Partial<Chat>)) =>
-    setChats((list) => list.map((c) => (c.id === id ? { ...c, ...(typeof patch === 'function' ? patch(c) : patch) } : c)))
+    updateChat(id, (c) => (typeof patch === 'function' ? patch(c) : patch))
+
+  if (!chat) return <p className="mt-24 text-center text-[18px] text-grey-text">No conversations left. Reset demo data from the profile menu to restore them.</p>
 
   const select = (id: string) => {
     setSelectedId(id)
@@ -63,9 +65,8 @@ export function InboxPage() {
         open={blocking}
         onCancel={() => setBlocking(false)}
         onConfirm={() => {
-          const remaining = chats.filter((c) => c.id !== chat.id)
-          setChats(remaining)
-          setSelectedId(remaining[0].id)
+          blockChat(chat.id)
+          setSelectedId(chats.find((c) => c.id !== chat.id)?.id)
           setBlocking(false)
           toast.show(`${chat.name} has been blocked`)
         }}

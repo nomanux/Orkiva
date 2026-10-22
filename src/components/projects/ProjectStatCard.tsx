@@ -4,21 +4,21 @@ import badgeDot from '../../assets/projects/badge-dot.svg'
 const COLUMNS = 21
 const HIGHLIGHT = 3 // black columns marking "now"
 
-type ProjectStatCardProps = { label: string; value: number; percent: number; filled: number }
+type ProjectStatCardProps = { label: string; value: number; percent: number; hint: string }
 
-/** Dot-matrix chart: `filled` green columns, three black, the rest grey; the badge sits over the middle black column. */
-export function ProjectStatCard({ label, value, percent, filled }: ProjectStatCardProps) {
+/** Dot-matrix chart: green columns for `percent`, three black, the rest grey; the badge sits over the middle black column. */
+export function ProjectStatCard({ label, value, percent, hint }: ProjectStatCardProps) {
+  const filled = Math.round((percent / 100) * (COLUMNS - HIGHLIGHT))
   const badgeColumn = filled + 1
 
   return (
     <article className="relative h-[143px] flex-1 overflow-hidden rounded-[15px] bg-white p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-[16px] leading-[1.5] tracking-[-0.48px] text-grey-text">{label}</h2>
-        <button type="button" aria-label={`Open ${label}`} className="cursor-pointer rounded-full">
-          <img src={arrowButton} alt="" width={38} height={38} />
-        </button>
+        <img src={arrowButton} alt="" width={38} height={38} aria-hidden />
       </div>
-      <p className="mt-[23px] text-[42px] leading-[1.2] font-bold tracking-[-2.52px]">{value}</p>
+      <p className="mt-[16px] text-[42px] leading-[1.2] font-bold tracking-[-2.52px]">{value}</p>
+      <p className="text-[12px] leading-[1.2] text-grey-text">{hint}</p>
 
       <div className="absolute top-[93px] right-4 flex items-end gap-[2px]" aria-hidden>
         {Array.from({ length: COLUMNS }, (_, c) => {

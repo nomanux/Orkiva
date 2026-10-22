@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router'
 import { Card } from '../ui/Card'
 import logoSmall from '../../assets/brand/orkiva-logo.svg'
 import dropdownSmall from '../../assets/dashboard/dropdown-small.svg'
@@ -14,7 +15,7 @@ import microphone from '../../assets/dashboard/microphone.svg'
 import taskOverview from '../../assets/dashboard/task-overview.svg'
 import projectEfficiency from '../../assets/dashboard/project-efficiency.svg'
 import teamPerformance from '../../assets/dashboard/team-performance.png'
-import { user } from '../../data/dashboard'
+import { firstName, useSession } from '../../data/session'
 
 const TOOLS = [
   { label: 'Reasoning', icon: lightbulbBolt, w: 8, h: 8 },
@@ -25,11 +26,13 @@ const TOOLS = [
 const SUGGESTIONS = [
   {
     title: 'Task Overview',
+    prompt: 'Give me an overview of my tasks',
     body: 'Monitor, manage, and optimize all project tasks in real time.',
     icon: <img src={taskOverview} alt="" width={16} height={16} />,
   },
   {
     title: 'Project Efficiency',
+    prompt: 'How are my projects progressing?',
     body: 'Analyze performance to improve workflow speed and overall...',
     icon: (
       <span className="flex size-4 items-center justify-center">
@@ -39,6 +42,7 @@ const SUGGESTIONS = [
   },
   {
     title: 'Team Performance',
+    prompt: 'How is the team workload looking?',
     body: 'Track, measure, and enhance team productivity, collaboration...',
     icon: <img src={teamPerformance} alt="" width={16} height={16} className="object-cover" />,
   },
@@ -57,8 +61,14 @@ function ToolChip({ children, label }: { children: ReactNode; label: string }) {
 }
 
 export function AiAssistant() {
+  const navigate = useNavigate()
   const [prompt, setPrompt] = useState('')
-  const firstName = user.name
+  const name = firstName(useSession().profile.name)
+  const [greeting] = useState(() => {
+    const h = new Date().getHours()
+    return h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening'
+  })
+  const ask = (text: string) => navigate(`/ai-assistant?q=${encodeURIComponent(text)}`)
 
   return (
     <Card className="flex h-[368px] w-full flex-col p-4">
@@ -88,7 +98,7 @@ export function AiAssistant() {
       </div>
 
       <p className="mt-1.5 text-center text-[14px] leading-[1.4] font-medium">
-        Good Morning, {firstName}
+        {greeting}, {name}
         <br />
         How can I <span className="font-normal text-primary-dark">assist you today?</span>
       </p>
@@ -97,7 +107,7 @@ export function AiAssistant() {
         className="relative mt-3 h-[102px] w-full shrink-0"
         onSubmit={(e) => {
           e.preventDefault()
-          setPrompt('')
+          if (prompt.trim()) ask(prompt.trim())
         }}
       >
         <img src={chatInputBg} alt="" width={364} height={102} className="absolute inset-0 size-full" />
@@ -141,7 +151,7 @@ export function AiAssistant() {
           <button
             key={s.title}
             type="button"
-            onClick={() => setPrompt(s.title)}
+            onClick={() => ask(s.prompt)}
             className="flex h-[86px] min-w-0 flex-1 cursor-pointer flex-col items-center rounded-lg bg-background px-2 pt-2.5 hover:bg-stock"
           >
             {s.icon}

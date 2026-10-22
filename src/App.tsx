@@ -1,6 +1,7 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router'
 import { TopBar } from './components/layout/TopBar'
-import { NAV_ITEMS } from './components/layout/navItems'
+import { useSession } from './data/session'
 import { Dashboard } from './pages/Dashboard'
 import { CheckEmail } from './pages/auth/CheckEmail'
 import { ForgotPassword } from './pages/auth/ForgotPassword'
@@ -8,30 +9,31 @@ import { Login } from './pages/auth/Login'
 import { ResetPassword } from './pages/auth/ResetPassword'
 import { SignUp } from './pages/auth/SignUp'
 import { VerifyCode } from './pages/auth/VerifyCode'
-import { SettingsPage } from './pages/settings/SettingsPage'
-import { ProjectsPage } from './pages/projects/ProjectsPage'
-import { InboxPage } from './pages/inbox/InboxPage'
-import { CalendarPage } from './pages/calendar/CalendarPage'
-import { MeetingsPage } from './pages/meetings/MeetingsPage'
-import { AiAssistantPage } from './pages/ai/AiAssistantPage'
+
+// Heavier pages load on first visit so the dashboard and login stay fast.
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const ProjectsPage = lazy(() => import('./pages/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })))
+const InboxPage = lazy(() => import('./pages/inbox/InboxPage').then((m) => ({ default: m.InboxPage })))
+const CalendarPage = lazy(() => import('./pages/calendar/CalendarPage').then((m) => ({ default: m.CalendarPage })))
+const MeetingsPage = lazy(() => import('./pages/meetings/MeetingsPage').then((m) => ({ default: m.MeetingsPage })))
+const AiAssistantPage = lazy(() => import('./pages/ai/AiAssistantPage').then((m) => ({ default: m.AiAssistantPage })))
 
 function AppLayout() {
+  const { signedIn } = useSession()
+  const { pathname, search } = useLocation()
+  if (!signedIn) return <Navigate to="/login" replace state={{ from: pathname + search }} />
   return (
     <div className="overflow-x-auto">
       <div className="w-full min-w-[1280px] px-6 pt-6 pb-[42px]">
         <TopBar />
         <main>
-          <Outlet />
+          <Suspense fallback={<p className="mt-24 text-center text-[14px] text-grey-text">Loading…</p>}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
   )
-}
-
-function ComingSoon() {
-  const { pathname } = useLocation()
-  const label = NAV_ITEMS.find((item) => item.path === pathname)?.label ?? 'This page'
-  return <div className="mt-24 text-center text-[22px] text-secondary-400">{label} is coming soon.</div>
 }
 
 function App() {
@@ -46,9 +48,6 @@ function App() {
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/ai-assistant" element={<AiAssistantPage />} />
           <Route path="/settings/:section?" element={<SettingsPage />} />
-          {NAV_ITEMS.filter((item) => !['/', '/projects', '/inbox', '/meetings', '/calendar', '/ai-assistant'].includes(item.path)).map((item) => (
-            <Route key={item.path} path={item.path} element={<ComingSoon />} />
-          ))}
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />

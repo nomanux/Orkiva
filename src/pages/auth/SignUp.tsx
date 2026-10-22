@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { AuthLayout } from '../../components/auth/AuthLayout'
 import { FooterPrompt, GoogleButton, PhoneField, PrimaryButton, TextField } from '../../components/auth/FormControls'
+import { DEMO_EMAIL, signIn } from '../../data/session'
 
 export function SignUp() {
   const navigate = useNavigate()
@@ -15,7 +16,8 @@ export function SignUp() {
       return
     }
     setError('')
-    navigate('/check-email', { state: { email: data.get('email') } })
+    const name = `${data.get('firstName')} ${data.get('lastName')}`.trim()
+    navigate('/check-email', { state: { email: data.get('email'), signup: { name, phone: data.get('phone') } } })
   }
 
   return (
@@ -56,7 +58,12 @@ export function SignUp() {
 
         <div className="flex w-full flex-col gap-3">
           <PrimaryButton>Create Account</PrimaryButton>
-          <GoogleButton onClick={() => navigate('/')} />
+          <GoogleButton
+            onClick={() => {
+              signIn(DEMO_EMAIL)
+              navigate('/')
+            }}
+          />
           <FooterPrompt text="Already have an account?" linkText="Login" to="/login" />
         </div>
       </form>

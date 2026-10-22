@@ -1,13 +1,17 @@
 import { Fragment, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { AuthLayout } from '../../components/auth/AuthLayout'
 import { BackToLogin, PrimaryButton } from '../../components/auth/FormControls'
+import { signUp } from '../../data/session'
+
+type VerifyState = { email?: string; signup?: { name: string; phone: string } } | null
 
 const CODE_LENGTH = 6
 const SEPARATOR_AFTER = 2 // dash between the 3rd and 4th digit
 
 export function VerifyCode() {
   const navigate = useNavigate()
+  const { state } = useLocation() as { state: VerifyState }
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
   const inputs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -37,11 +41,16 @@ export function VerifyCode() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (complete) navigate('/reset-password')
+    if (!complete) return
+    // Demo: any 6-digit code is accepted. New accounts go straight in; password resets continue.
+    if (state?.signup && state.email) {
+      signUp(state.signup.name, state.email, state.signup.phone)
+      navigate('/')
+    } else navigate('/reset-password')
   }
 
   return (
-    <AuthLayout title="Enter the code" subtitle="“Unlock Your Account: Enter the Code to Regain Control!”">
+    <AuthLayout title="Enter the code" subtitle={`Enter the 6-digit code sent to ${state?.email ?? "your email"}. Any code works in this demo.`}>
       <form onSubmit={onSubmit} className="flex w-full flex-col gap-7">
         <fieldset className="flex w-full items-center justify-center gap-3">
           <legend className="sr-only">Verification code</legend>

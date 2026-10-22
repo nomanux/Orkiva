@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useContext, useState } from 'react'
+import { SavedSettings } from '../../components/settings/savedSettings'
 import { SettingsSection, Toggle } from '../../components/settings/SettingsControls'
 import { BODY, SMALL } from '../../components/settings/styles'
 
@@ -12,7 +13,8 @@ const NOTIFICATIONS = [
 ]
 
 export function NotificationSettings() {
-  const [enabled, setEnabled] = useState(() => Object.fromEntries(NOTIFICATIONS.map((n) => [n.id, n.on])))
+  const saved = useContext(SavedSettings)
+  const [enabled, setEnabled] = useState(() => Object.fromEntries(NOTIFICATIONS.map((n) => [n.id, saved[n.id] ? saved[n.id] === 'on' : n.on])))
 
   return (
     <SettingsSection

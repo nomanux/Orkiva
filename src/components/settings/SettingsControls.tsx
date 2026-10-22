@@ -4,6 +4,7 @@ import eyeIcon from '../../assets/settings/eye.svg'
 import toggleOn from '../../assets/settings/toggle-on.svg'
 import toggleOff from '../../assets/settings/toggle-off.svg'
 import { BODY } from './styles'
+import { useSaved } from './savedSettings'
 
 const CONTROL =
   'flex h-10 w-full items-center gap-1.5 rounded-[10px] border border-gs-100 bg-white px-3 focus-within:border-primary'
@@ -59,12 +60,13 @@ export function Field({ label, required, hint, className = '', children }: Field
 
 type TextInputProps = InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: ReactNode; fieldClassName?: string }
 
-export function TextInput({ label, required, hint, fieldClassName, ...props }: TextInputProps) {
+export function TextInput({ label, required, hint, fieldClassName, defaultValue, ...props }: TextInputProps) {
+  const saved = useSaved(props.name, defaultValue as string | undefined)
   return (
     <Field label={label} required={required} hint={hint} className={fieldClassName}>
       {(id) => (
         <div className={CONTROL}>
-          <input id={id} required={required} className={CONTROL_TEXT} {...props} />
+          <input id={id} required={required} className={CONTROL_TEXT} defaultValue={saved} {...props} />
         </div>
       )}
     </Field>
@@ -95,12 +97,13 @@ export function PasswordInput({ label, required, hint, ...props }: TextInputProp
 
 type SelectInputProps = SelectHTMLAttributes<HTMLSelectElement> & { label: string; options: string[]; hint?: ReactNode }
 
-export function SelectInput({ label, required, hint, options, ...props }: SelectInputProps) {
+export function SelectInput({ label, required, hint, options, defaultValue, ...props }: SelectInputProps) {
+  const saved = useSaved(props.name, defaultValue as string | undefined)
   return (
     <Field label={label} required={required} hint={hint}>
       {(id) => (
         <div className={`${CONTROL} relative`}>
-          <select id={id} required={required} className={`${CONTROL_TEXT} cursor-pointer appearance-none pr-10`} {...props}>
+          <select id={id} required={required} className={`${CONTROL_TEXT} cursor-pointer appearance-none pr-10`} defaultValue={saved} {...props}>
             {options.map((o) => (
               <option key={o}>{o}</option>
             ))}

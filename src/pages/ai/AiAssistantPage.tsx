@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
-import { HISTORY, reply, type AssistantReply } from '../../data/assistant'
+import { Link, useNavigate, useSearchParams } from 'react-router'
+import {
+  addQuickAction,
+  appendMessage,
+  dayLabel,
+  deleteConversation,
+  reply,
+  startConversation,
+  useConversations,
+  useQuickActions,
+  type Conversation,
+} from '../../data/assistant'
 import { useDismiss } from '../../hooks/useDismiss'
-import { user } from '../../data/dashboard'
+import { firstName, useSession } from '../../data/session'
 import avatar from '../../assets/dashboard/avatar-masud.png'
 import dashboardShot from '../../assets/projects/dashboard-shot.png'
 import menuDots from '../../assets/ai/menu-dots.svg'
@@ -25,7 +35,6 @@ import micIcon from '../../assets/ai/mic.svg'
 import sendIcon from '../../assets/ai/send.svg'
 import gallery from '../../assets/ai/gallery.svg'
 import gallerySm from '../../assets/ai/gallery-sm.svg'
-import galleryDark from '../../assets/ai/gallery-dark.svg'
 import pieIcon from '../../assets/ai/pie.svg'
 import cardIcon from '../../assets/ai/cardholder.svg'
 import sendLg from '../../assets/ai/send-lg.svg'
@@ -47,34 +56,49 @@ import toolVoice from '../../assets/ai/tool-voice.png'
 const WORKSPACES = ['Agency', 'Team', 'Personal', 'Marketing', 'Leads']
 const MODELS = ['Auto', 'Fast', 'Deep Research']
 
-type QuickAction = { id: string; title: string; icon: string; glow: string; faces?: string[]; to?: string }
-const DEFAULT_ACTIONS: QuickAction[] = [
-  { id: 'q1', title: 'Align my calendar with this week tasks', icon: calendarIcon, glow: glowGreen },
-  { id: 'q2', title: 'Create meeting highlight', icon: checklistIcon, glow: glowPurple, faces: [face1, face2, face3] },
-]
+const ACTION_STYLE = {
+  calendar: { icon: calendarIcon, glow: glowGreen },
+  checklist: { icon: checklistIcon, glow: glowPurple },
+}
+const FACES = [face1, face2, face3]
 
-type ChatMessage = { id: string; from: 'user' | 'assistant'; text?: string; reply?: AssistantReply }
-
+/** The open conversation lives in the URL (`?c=id`), so it survives reloads and the back button works. */
 export function AiAssistantPage() {
-  const [chat, setChat] = useState<ChatMessage[] | null>(null)
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+  const conversations = useConversations()
+  const id = params.get('c')
+  const conversation = conversations.find((c) => c.id === id)
+  const queued = params.get('q')
 
-  const start = (prompt: string) => setChat([{ id: `u${Date.now()}`, from: 'user', text: prompt }])
+  const open = (cid: string | null) => navigate(cid ? `/ai-assistant?c=${cid}` : '/ai-assistant')
+  const start = (prompt: string) => open(startConversation(prompt))
 
-  return chat ? <ChatView initial={chat} onClose={() => setChat(null)} onRestart={start} /> : <Home onAsk={start} />
+  // A prompt handed over from the dashboard (`?q=`) starts a conversation once.
+  useEffect(() => {
+    if (queued) navigate(`/ai-assistant?c=${startConversation(queued)}`, { replace: true })
+  }, [queued, navigate])
+
+  return conversation ? (
+    <ChatView conversation={conversation} conversations={conversations} onOpen={open} onStart={start} />
+  ) : (
+    <Home onAsk={start} />
+  )
 }
 
 /* ---------- Start screen ---------- */
 
 function Home({ onAsk }: { onAsk: (prompt: string) => void }) {
   const [workspace, setWorkspace] = useState('Team')
-  const [actions, setActions] = useState(DEFAULT_ACTIONS)
+  const actions = useQuickActions()
+  const name = firstName(useSession().profile.name)
   const [adding, setAdding] = useState(false)
   const [newAction, setNewAction] = useState('')
 
   return (
     <div className="mt-6 flex flex-col gap-6">
       <div>
-        <h1 className="text-[40px] leading-[1.2] font-semibold tracking-[-2px] text-black">Hello, {user.name}</h1>
+        <h1 className="text-[40px] leading-[1.2] font-semibold tracking-[-2px] text-black">Hello, {name}</h1>
         <p className="text-[40px] leading-[1.2] font-semibold tracking-[-2px] text-black/25">How can I help you?</p>
       </div>
 
@@ -105,9 +129,9 @@ function Home({ onAsk }: { onAsk: (prompt: string) => void }) {
             <button type="button" aria-label="Add quick action" onClick={() => setAdding(true)} className="flex size-9 cursor-pointer items-center justify-center rounded-md border border-stock hover:bg-background">
               <img src={plusIcon} alt="" width={18} height={18} />
             </button>
-            <button type="button" aria-label="More" className="flex size-9 cursor-pointer items-center justify-center rounded-md border border-stock hover:bg-background">
+            <Link to="/ai-assistant?q=What%20can%20you%20do%3F" aria-label="What can the assistant do?" title="What can the assistant do?" className="flex size-9 items-center justify-center rounded-md border border-stock hover:bg-background">
               <img src={menuDots} alt="" width={18} height={18} />
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -119,17 +143,17 @@ function Home({ onAsk }: { onAsk: (prompt: string) => void }) {
               onClick={() => onAsk(a.title)}
               className="relative flex h-[210px] cursor-pointer flex-col overflow-hidden rounded-[28px] bg-background p-5 text-left transition-colors hover:bg-stock/70"
             >
-              <img src={a.glow} alt="" width={119} height={124} className="pointer-events-none absolute -top-[22px] -left-[18px]" />
+              <img src={ACTION_STYLE[a.kind].glow} alt="" width={119} height={124} className="pointer-events-none absolute -top-[22px] -left-[18px]" />
               <span className="flex items-start justify-between">
                 <span className="relative flex size-16 items-center justify-center rounded-[16px] border border-white bg-white/15 backdrop-blur-[5.5px]">
-                  <img src={a.icon} alt="" width={26} height={26} />
+                  <img src={ACTION_STYLE[a.kind].icon} alt="" width={26} height={26} />
                 </span>
                 <img src={menuDotsLg} alt="" width={24} height={24} />
               </span>
               <span className="mt-auto text-[20px] leading-[1.3] font-medium tracking-[-0.4px] text-black/55">{a.title}</span>
               {a.faces && (
                 <span className="mt-2 flex">
-                  {a.faces.map((f, i) => (
+                  {FACES.map((f, i) => (
                     <img key={i} src={f} alt="" width={32} height={32} className={`rounded-full ring-2 ring-background ${i ? '-ml-3' : ''}`} />
                   ))}
                 </span>
@@ -141,7 +165,7 @@ function Home({ onAsk }: { onAsk: (prompt: string) => void }) {
               onSubmit={(e) => {
                 e.preventDefault()
                 if (!newAction.trim()) return
-                setActions((list) => [...list, { id: `q${Date.now()}`, title: newAction.trim(), icon: checklistIcon, glow: glowPurple }])
+                addQuickAction(newAction.trim())
                 setNewAction('')
                 setAdding(false)
               }}
@@ -272,98 +296,114 @@ function PromptBox({ onSubmit }: { onSubmit: (text: string) => void }) {
 /* ---------- Chat ---------- */
 
 const TOOLS = [
-  { label: 'Chat Files', icon: folderIcon, art: toolFiles, prompt: 'Summarise the files shared in this chat' },
+  { label: 'Chat Files', icon: folderIcon, art: toolFiles, prompt: 'Which files are attached in my workspace?' },
   { label: 'Images', icon: galleryTool, art: toolImages, prompt: 'Help me with an image' },
   { label: 'Translate', icon: translateIcon, art: toolTranslate, prompt: 'Translate this for me' },
   { label: 'Audio Chat', icon: micTool, art: toolVoice, prompt: 'Start an audio chat' },
 ]
 
-function ChatView({ initial, onClose, onRestart }: { initial: ChatMessage[]; onClose: () => void; onRestart: (prompt: string) => void }) {
-  const navigate = useNavigate()
-  const [messages, setMessages] = useState<ChatMessage[]>(initial)
+type ChatViewProps = {
+  conversation: Conversation
+  conversations: Conversation[]
+  onOpen: (id: string | null) => void
+  onStart: (prompt: string) => void
+}
+
+function ChatView({ conversation, conversations, onOpen, onStart }: ChatViewProps) {
+  const { profile } = useSession()
   const [draft, setDraft] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const messages = conversation.messages
   const last = messages[messages.length - 1]
   // The assistant is "typing" whenever the latest message is still unanswered.
   const thinking = last?.from === 'user'
 
-  // Answer whenever the latest message is from the user.
   useEffect(() => {
     if (last?.from !== 'user' || !last.text) return
-    const id = setTimeout(() => {
-      setMessages((list) => [...list, { id: `a${Date.now()}`, from: 'assistant', reply: reply(last.text!) }])
-    }, 900)
+    const text = last.text
+    const id = setTimeout(() => appendMessage(conversation.id, { from: 'assistant', reply: reply(text) }), 700)
     return () => clearTimeout(id)
-  }, [last])
+  }, [last, conversation.id])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages.length, thinking])
+  }, [messages.length])
 
   const send = (text: string) => {
     if (!text.trim() || thinking) return
-    setMessages((list) => [...list, { id: `u${Date.now()}`, from: 'user', text: text.trim() }])
+    appendMessage(conversation.id, { from: 'user', text: text.trim() })
     setDraft('')
   }
+
+  const groups = conversations.reduce<{ label: string; items: Conversation[] }[]>((acc, c) => {
+    const label = dayLabel(c.createdAt)
+    const group = acc.find((g) => g.label === label)
+    if (group) group.items.push(c)
+    else acc.push({ label, items: [c] })
+    return acc
+  }, [])
 
   return (
     <div className="mt-6 flex h-[calc(100dvh-144px)] min-h-[560px] gap-5">
       <aside className="flex w-[288px] shrink-0 flex-col gap-4 overflow-y-auto">
-        <h2 className="text-[20px] font-semibold tracking-[-0.4px] text-black">Chat results</h2>
-        <h3 className="text-[16px] font-semibold text-black">Today</h3>
-        {HISTORY.today.map((h) => (
-          <button key={h.id} type="button" onClick={() => onRestart(h.prompt)} className="flex cursor-pointer flex-col gap-3 rounded-[22px] bg-white p-3 text-left hover:ring-2 hover:ring-primary/40">
-            <span className="flex items-center gap-2">
-              <span className="flex size-9 items-center justify-center rounded-full bg-background">
-                <img src={gallerySm} alt="" width={16} height={16} />
-              </span>
-              <span>
-                <span className="block text-[14px] font-semibold text-black">{h.title}</span>
-                <span className="block text-[11px] text-black/50">{h.date}</span>
-              </span>
-            </span>
-            <span className="relative block overflow-hidden rounded-[18px] bg-[#f0f0f0] p-2">
-              <img src={dashboardShot} alt="" className="h-[150px] w-full rounded-[7px] object-cover object-top" />
-              <span className="absolute right-4 bottom-4 left-4 flex items-center gap-3 rounded-[14px] border border-white bg-white/50 px-3 py-2 backdrop-blur-[8px]">
-                <img src={gallery} alt="" width={18} height={18} />
-                <span>
-                  <span className="block text-[13px] font-medium text-black">project images</span>
-                  <span className="block text-[11px] text-black/55">Smart Project Planning System</span>
-                </span>
-              </span>
-            </span>
+        <div className="flex items-center justify-between">
+          <h2 className="text-[20px] font-semibold tracking-[-0.4px] text-black">Chat results</h2>
+          <button type="button" onClick={() => onOpen(null)} className="h-8 cursor-pointer rounded-full bg-primary px-3 text-[12px] font-semibold hover:brightness-95">
+            + New chat
           </button>
-        ))}
-        <h3 className="mt-2 text-[16px] font-semibold text-black">Yesterday</h3>
-        <div className="flex flex-col gap-2 rounded-[22px] border border-stock bg-white p-3">
-          <span className="flex items-center gap-2 border-b border-stock pb-3">
-            <span className="flex size-9 items-center justify-center rounded-full bg-black/10">
-              <img src={galleryDark} alt="" width={16} height={16} />
-            </span>
-            <span>
-              <span className="block text-[14px] font-semibold text-black">AI Search</span>
-              <span className="block text-[11px] text-black/50">Yesterday. 04th August 2025</span>
-            </span>
-          </span>
-          {HISTORY.yesterday.map((h) => (
-            <button key={h.id} type="button" onClick={() => onRestart(h.title)} className="flex cursor-pointer items-start gap-2 rounded-[10px] bg-background px-2.5 py-2 text-left hover:bg-stock">
-              <img src={h.icon === 'card' ? cardIcon : pieIcon} alt="" width={18} height={18} />
-              <span className="min-w-0">
-                <span className="block truncate text-[12px] font-semibold text-black">{h.title}</span>
-                <span className="block truncate text-[11px] text-black/50">{h.sub}</span>
-              </span>
-            </button>
-          ))}
         </div>
+        {groups.map((g, gi) => (
+          <section key={g.label} className="flex flex-col gap-2">
+            <h3 className="text-[16px] font-semibold text-black">{g.label}</h3>
+            {gi === 0 && g.label === 'Today' ? (
+              <HistoryCard c={g.items[0]} active={g.items[0].id === conversation.id} onOpen={() => onOpen(g.items[0].id)} />
+            ) : null}
+            {(gi === 0 && g.label === 'Today' ? g.items.slice(1) : g.items).length > 0 && (
+              <ul className="flex flex-col gap-2 rounded-[22px] border border-stock bg-white p-3">
+                {(gi === 0 && g.label === 'Today' ? g.items.slice(1) : g.items).map((c, i) => (
+                  <li key={c.id} className="group relative">
+                    <button
+                      type="button"
+                      onClick={() => onOpen(c.id)}
+                      aria-current={c.id === conversation.id ? 'page' : undefined}
+                      className={`flex w-full cursor-pointer items-start gap-2 rounded-[10px] px-2.5 py-2 pr-7 text-left ${
+                        c.id === conversation.id ? 'bg-primary/20' : 'bg-background hover:bg-stock'
+                      }`}
+                    >
+                      <img src={(c.icon ?? (i % 2 ? 'card' : 'pie')) === 'card' ? cardIcon : pieIcon} alt="" width={18} height={18} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-[12px] font-semibold text-black">{c.title}</span>
+                        <span className="block truncate text-[11px] text-black/50">{c.messages.length} messages</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Delete “${c.title}”`}
+                      onClick={() => {
+                        deleteConversation(c.id)
+                        if (c.id === conversation.id) onOpen(null)
+                      }}
+                      className="absolute top-2 right-2 hidden size-5 cursor-pointer items-center justify-center rounded-full text-[14px] leading-none text-black/40 group-hover:flex hover:bg-white hover:text-error focus:flex"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
       </aside>
 
       <section aria-label="Chat" className="flex min-w-0 flex-1 flex-col rounded-[24px] bg-white">
-        <header className="flex items-center justify-between px-6 pt-5 pb-3">
-          <span className="flex size-11 items-center justify-center rounded-full bg-background">
+        <header className="flex items-center justify-between gap-4 px-6 pt-5 pb-3">
+          <button type="button" aria-label="New chat" title="New chat" onClick={() => onOpen(null)} className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-background hover:bg-stock">
             <img src={galleryXl} alt="" width={24} height={24} />
-          </span>
-          <h1 className="text-[24px] font-medium tracking-[-0.5px] text-black">New Chat</h1>
-          <button type="button" aria-label="Close chat" onClick={onClose} className="cursor-pointer rounded-full">
+          </button>
+          <h1 className="truncate text-[22px] font-medium tracking-[-0.5px] text-black" title={conversation.title}>
+            {conversation.title}
+          </h1>
+          <button type="button" aria-label="Close chat" onClick={() => onOpen(null)} className="shrink-0 cursor-pointer rounded-full">
             <img src={closeCircle} alt="" width={44} height={44} />
           </button>
         </header>
@@ -372,7 +412,7 @@ function ChatView({ initial, onClose, onRestart }: { initial: ChatMessage[]; onC
           <div className="flex items-center gap-3">
             <img src={assistantAvatar} alt="Orkiva Assistant" width={48} height={48} className="rounded-full" />
             <p className="text-[20px] leading-[1.2] font-medium tracking-[-0.4px] text-black">
-              Hi,
+              Hi {firstName(profile.name)},
               <br />
               <span className="font-semibold opacity-50">How can I help you?</span>
             </p>
@@ -382,18 +422,17 @@ function ChatView({ initial, onClose, onRestart }: { initial: ChatMessage[]; onC
             m.from === 'user' ? (
               <div key={m.id} className="flex items-start justify-end gap-3">
                 <p className="max-w-[60%] rounded-2xl bg-background px-4 py-3 text-[15px] leading-[1.45] text-black">{m.text}</p>
-                <img src={avatar} alt={user.name} width={40} height={40} className="rounded-full" />
+                <img src={avatar} alt={profile.name} width={40} height={40} className="rounded-full" />
               </div>
             ) : (
               <div key={m.id} className="flex flex-col gap-3">
                 <div className="flex items-start gap-3">
                   <img src={assistantAvatar} alt="" width={40} height={40} className="rounded-full" />
-                  <div className="max-w-[70%] rounded-2xl bg-background px-4 py-3 text-[15px] leading-[1.45]">
-                    {m.reply && 'text' in m.reply ? (
-                      <p className="text-black/70">{m.reply.text}</p>
-                    ) : (
-                      <ol className="flex flex-col gap-3">
-                        {m.reply?.points.map((p, n) => (
+                  <div className="flex max-w-[70%] flex-col gap-3 rounded-2xl bg-background px-4 py-3 text-[15px] leading-[1.45]">
+                    {m.reply?.text && <p className="text-black/80">{m.reply.text}</p>}
+                    {m.reply?.points && (
+                      <ol className="flex flex-col gap-2.5">
+                        {m.reply.points.map((p, n) => (
                           <li key={n}>
                             <span className="font-semibold text-black">
                               {n + 1}. {p.title}
@@ -407,6 +446,11 @@ function ChatView({ initial, onClose, onRestart }: { initial: ChatMessage[]; onC
                         ))}
                       </ol>
                     )}
+                    {m.reply?.link && (
+                      <Link to={m.reply.link.to} className="self-start rounded-full bg-primary px-3 py-1.5 text-[13px] font-semibold text-black hover:brightness-95">
+                        {m.reply.link.label} →
+                      </Link>
+                    )}
                   </div>
                 </div>
                 {i === 1 && (
@@ -415,7 +459,7 @@ function ChatView({ initial, onClose, onRestart }: { initial: ChatMessage[]; onC
                       <button
                         key={t.label}
                         type="button"
-                        onClick={() => (t.label === 'Images' ? send(t.prompt) : t.label === 'Audio Chat' ? navigate('/inbox') : send(t.prompt))}
+                        onClick={() => send(t.prompt)}
                         className="flex w-[140px] cursor-pointer flex-col gap-2 rounded-[18px] border border-[#c7c7c7] bg-[rgba(163,163,163,0.1)] p-3 text-left backdrop-blur-[4px] hover:border-primary"
                       >
                         <span className="flex items-center gap-2">
@@ -457,17 +501,17 @@ function ChatView({ initial, onClose, onRestart }: { initial: ChatMessage[]; onC
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Ask me anything…"
+              placeholder="Ask about tasks, projects, meetings… or “create task: …”"
               aria-label="Message the assistant"
               className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-black/45"
             />
-            <button type="button" aria-label="Voice input" className="cursor-pointer rounded-full p-1 hover:bg-white">
+            <button type="button" aria-label="Voice input" onClick={() => send('Start an audio chat')} className="cursor-pointer rounded-full p-1 hover:bg-white">
               <img src={micOutline} alt="" width={22} height={22} />
             </button>
-            <button type="button" aria-label="Attach file" className="cursor-pointer rounded-full p-1 hover:bg-white">
+            <button type="button" aria-label="Attach file" onClick={() => send('Which files are attached in my workspace?')} className="cursor-pointer rounded-full p-1 hover:bg-white">
               <img src={paperclip} alt="" width={22} height={22} />
             </button>
-            <button type="button" aria-label="More tools" className="cursor-pointer rounded-full p-1 hover:bg-white">
+            <button type="button" aria-label="Start a new chat" onClick={() => onStart('What can you do?')} className="cursor-pointer rounded-full p-1 hover:bg-white">
               <img src={plusOutline} alt="" width={22} height={22} />
             </button>
           </label>
@@ -477,5 +521,38 @@ function ChatView({ initial, onClose, onRestart }: { initial: ChatMessage[]; onC
         </form>
       </section>
     </div>
+  )
+}
+
+function HistoryCard({ c, active, onOpen }: { c: Conversation; active: boolean; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-current={active ? 'page' : undefined}
+      className={`flex cursor-pointer flex-col gap-3 rounded-[22px] bg-white p-3 text-left hover:ring-2 hover:ring-primary/40 ${active ? 'ring-2 ring-primary' : ''}`}
+    >
+      <span className="flex items-center gap-2">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background">
+          <img src={gallerySm} alt="" width={16} height={16} />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-[14px] font-semibold text-black">{c.title}</span>
+          <span className="block text-[11px] text-black/50">
+            {new Date(c.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {c.messages.length} messages
+          </span>
+        </span>
+      </span>
+      <span className="relative block overflow-hidden rounded-[18px] bg-[#f0f0f0] p-2">
+        <img src={dashboardShot} alt="" className="h-[150px] w-full rounded-[7px] object-cover object-top" />
+        <span className="absolute right-4 bottom-4 left-4 flex items-center gap-3 rounded-[14px] border border-white bg-white/50 px-3 py-2 backdrop-blur-[8px]">
+          <img src={gallery} alt="" width={18} height={18} />
+          <span>
+            <span className="block text-[13px] font-medium text-black">Orkiva Assistant</span>
+            <span className="block text-[11px] text-black/55">Smart Project Planning System</span>
+          </span>
+        </span>
+      </span>
+    </button>
   )
 }

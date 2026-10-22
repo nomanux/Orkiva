@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 import { Card } from '../ui/Card'
 import arrowButton from '../../assets/dashboard/arrow-up-right-button.svg'
 import totalTaskGraph from '../../assets/dashboard/total-task-graph.svg'
@@ -9,9 +10,9 @@ function StatCard({ title, count, graph }: { title: string; count: number; graph
     <Card className="h-[143px] min-w-0 flex-1 p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-[16px] leading-[1.5] tracking-[-0.48px] text-grey-text">{title}</h2>
-        <button type="button" aria-label={`Open ${title}`} className="cursor-pointer rounded-full">
+        <Link to="/projects" aria-label={`Open ${title}`} className="rounded-full">
           <img src={arrowButton} alt="" width={38} height={38} />
-        </button>
+        </Link>
       </div>
       <div className="mt-[23px] flex items-center justify-between">
         <p className="text-[42px] leading-[1.2] font-bold tracking-[-2.52px]">{count}</p>

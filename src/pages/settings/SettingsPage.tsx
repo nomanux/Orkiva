@@ -10,6 +10,8 @@ import { PlanPricingSettings } from './PlanPricingSettings'
 import { TaxDutiesSettings } from './TaxDutiesSettings'
 import { TimeLanguageSettings } from './TimeLanguageSettings'
 import { BODY } from '../../components/settings/styles'
+import { SavedSettings, settingsStore } from '../../components/settings/savedSettings'
+import { updateProfile } from '../../data/session'
 
 const SECTIONS = [
   { slug: 'general', label: 'General', Component: GeneralSettings },
@@ -29,6 +31,7 @@ export function SettingsPage() {
   const { section } = useParams()
   const active = SECTIONS.find((s) => s.slug === section)
   const [saved, setSaved] = useState(false)
+  const allSaved = settingsStore.use()
 
   useEffect(() => {
     if (!saved) return
@@ -38,8 +41,18 @@ export function SettingsPage() {
 
   if (!active) return <Navigate to="/settings/general" replace />
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const values: Record<string, string> = {}
+    new FormData(e.currentTarget).forEach((v, k) => {
+      // Passwords are never stored, even in this demo.
+      if (typeof v === 'string' && !/password/i.test(k)) values[k] = v
+    })
+    if (active.slug === 'account') {
+      updateProfile({ name: values.fullName, email: values.email, phone: values.phone })
+    } else {
+      settingsStore.set((all) => ({ ...all, [active.slug]: values }))
+    }
     setSaved(true)
   }
 
@@ -83,7 +96,9 @@ export function SettingsPage() {
           </ul>
         </nav>
         <form id={FORM_ID} key={active.slug} onSubmit={onSubmit} className="flex min-w-0 flex-1 flex-col" aria-label={active.label}>
-          <active.Component />
+          <SavedSettings.Provider value={allSaved[active.slug] ?? {}}>
+            <active.Component />
+          </SavedSettings.Provider>
         </form>
       </div>
 

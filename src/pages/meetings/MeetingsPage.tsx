@@ -7,6 +7,7 @@ import { Toast } from '../../components/ui/Toast'
 import { useToast } from '../../hooks/useToast'
 import { formatTime, meetingState, meetingsStore, minutes, useMeetings, weekStart, addDays, type Meeting } from '../../data/meetingsStore'
 import { formatLong, toISO } from '../../lib/dates'
+import { useProjects } from '../../data/projects'
 import videocamera from '../../assets/dashboard/videocamera.svg'
 import plusIcon from '../../assets/projects/plus.svg'
 import searchIcon from '../../assets/inbox/search.svg'
@@ -19,6 +20,8 @@ const sortKey = (m: Meeting) => `${m.date} ${m.start}`
 /** Not in the Figma file: designed to match the dashboard's "Meeting Notes" card and the Calendar event cards. */
 export function MeetingsPage() {
   const meetings = useMeetings()
+  const projects = useProjects()
+  const projectName = (m: Meeting) => projects.find((p) => p.id === m.projectId)?.name
   const [tab, setTab] = useState<Tab>('Upcoming')
   const [query, setQuery] = useState('')
   const [scheduling, setScheduling] = useState(false)
@@ -48,7 +51,7 @@ export function MeetingsPage() {
   const q = query.trim().toLowerCase()
   const rows = sorted
     .filter((m) => (tab === 'All' ? true : tab === 'Past' ? meetingState(m) === 'ended' : meetingState(m) !== 'ended'))
-    .filter((m) => !q || m.title.toLowerCase().includes(q) || m.description.toLowerCase().includes(q))
+    .filter((m) => !q || [m.title, m.description, projectName(m) ?? ''].some((f) => f.toLowerCase().includes(q)))
   if (tab === 'Past') rows.reverse()
 
   return (
@@ -90,7 +93,8 @@ export function MeetingsPage() {
                 {next.date === today ? 'Today' : formatLong(next.date)} · {formatTime(next.start)} - {formatTime(next.end)}
               </p>
               <p className="line-clamp-2 text-[13px] text-white/70">{next.description}</p>
-              <AttendeeStack photos={next.attendees} size={28} />
+              {projectName(next) && <p className="text-[12px] font-semibold text-primary">{projectName(next)}</p>}
+              <AttendeeStack ids={next.attendeeIds} size={28} />
               <button type="button" onClick={() => setCall(next)} className="mt-1 flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[15px] font-semibold text-black hover:brightness-95">
                 <img src={videocamera} alt="" width={20} height={20} />
                 {live ? 'Join Meeting' : 'Start Early'}
@@ -130,7 +134,10 @@ export function MeetingsPage() {
                   <AppIcon app={m.app} size={40} />
                   <div className="min-w-0 flex-1">
                     <p className={`truncate text-[14px] font-semibold text-ink ${m.status === 'Cancelled' ? 'line-through opacity-60' : ''}`}>{m.title}</p>
-                    <p className="truncate text-[12px] text-grey-text">{m.description}</p>
+                    <p className="truncate text-[12px] text-grey-text">
+                      {projectName(m) && <span className="font-semibold text-ink/70">{projectName(m)} · </span>}
+                      {m.description}
+                    </p>
                   </div>
                   <div className="w-[170px] shrink-0 text-[13px]">
                     <p className="font-medium text-ink">{m.date === today ? 'Today' : formatLong(m.date)}</p>
@@ -138,7 +145,7 @@ export function MeetingsPage() {
                       {formatTime(m.start)} - {formatTime(m.end)}
                     </p>
                   </div>
-                  <AttendeeStack photos={m.attendees} />
+                  <AttendeeStack ids={m.attendeeIds} />
                   <span
                     className={`w-[92px] shrink-0 rounded-full px-2 py-1 text-center text-[11px] font-semibold ${
                       m.status === 'Cancelled'

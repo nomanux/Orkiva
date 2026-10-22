@@ -2,7 +2,9 @@ import { useRef, useState } from 'react'
 import { useDismiss } from '../../hooks/useDismiss'
 import { formatShort } from '../../lib/dates'
 import { personById } from '../../data/people'
-import type { Task, TaskMedia } from '../../data/projects'
+import { STATUSES, STATUS_LABEL, type Status, type Task, type TaskMedia } from '../../data/projects'
+import { relativeDue } from '../../lib/dates'
+import { isOverdue } from '../../data/insights'
 import menuDots from '../../assets/dashboard/menu-dots.svg'
 import flagIcon from '../../assets/projects/flag.svg'
 import graphUp from '../../assets/projects/graph-up.svg'
@@ -13,9 +15,9 @@ import ecommerceDot from '../../assets/projects/ecommerce-dot.svg'
 const SEGMENTS = 15
 const CHIP = 'flex items-center justify-center rounded-[6px] border border-stock'
 
-type TaskCardProps = { task: Task; onEdit: () => void; onDelete: () => void }
+type TaskCardProps = { task: Task; onEdit: () => void; onDelete: () => void; onMove: (status: Status) => void }
 
-export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({ task, onEdit, onDelete, onMove }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   useDismiss(menuRef, menuOpen, () => setMenuOpen(false))
@@ -50,7 +52,7 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
             <img src={menuDots} alt="" width={20} height={20} className="-rotate-90" />
           </button>
           {menuOpen && (
-            <ul role="menu" className="absolute top-full right-0 z-10 mt-1 w-36 overflow-hidden rounded-xl bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+            <ul role="menu" className="absolute top-full right-0 z-10 mt-1 w-44 overflow-hidden rounded-xl bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
               <li role="none">
                 <button
                   type="button"
@@ -64,6 +66,21 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
                   Edit task
                 </button>
               </li>
+              {STATUSES.filter((s) => s !== task.status).map((s) => (
+                <li key={s} role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onMove(s)
+                    }}
+                    className="w-full cursor-pointer px-4 py-2 text-left text-[14px] font-medium text-grey-text hover:bg-background hover:text-ink"
+                  >
+                    Move to {STATUS_LABEL[s]}
+                  </button>
+                </li>
+              ))}
               <li role="none">
                 <button
                   type="button"
@@ -83,7 +100,11 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
       </header>
 
       <div className="mt-[3px] flex flex-col gap-3">
-        <h3 className="text-[17px] leading-[1.2] font-semibold tracking-[-0.34px] text-black">{task.title}</h3>
+        <h3 className="text-[17px] leading-[1.2] font-semibold tracking-[-0.34px] text-black">
+          <button type="button" onClick={onEdit} className="cursor-pointer text-left hover:underline">
+            {task.title}
+          </button>
+        </h3>
         {!task.noteAfterMedia && note}
       </div>
 
@@ -91,9 +112,15 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
       {task.noteAfterMedia && note}
 
       {task.dueDate && (
-        <span className={`${CHIP} gap-[6px] self-start p-[6px]`}>
+        <span
+          className={`${CHIP} gap-[6px] self-start p-[6px] ${isOverdue(task) ? 'border-error/40 bg-error-50 text-error' : ''}`}
+          title={task.status === 'Done' ? 'Due date' : relativeDue(task.dueDate)}
+        >
           <img src={flagIcon} alt="" width={20} height={20} />
-          <span className="text-[14px] leading-[1.2] font-medium">{formatShort(task.dueDate)}</span>
+          <span className="text-[14px] leading-[1.2] font-medium">
+            {formatShort(task.dueDate)}
+            {isOverdue(task) && ' · overdue'}
+          </span>
         </span>
       )}
 

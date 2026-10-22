@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { ScheduleModal } from '../../components/calendar/ScheduleModal'
 import { EventCard } from '../../components/calendar/EventCard'
 import { VideoCallModal } from '../../components/inbox/VideoCallModal'
@@ -6,7 +7,9 @@ import { Toast } from '../../components/ui/Toast'
 import { useToast } from '../../hooks/useToast'
 import { useDismiss } from '../../hooks/useDismiss'
 import { addDays, meetingsStore, minutes, useMeetings, weekStart, type Meeting } from '../../data/meetingsStore'
-import { toISO } from '../../lib/dates'
+import { formatShort, toISO } from '../../lib/dates'
+import { STATUSES, useProjects, useTasks } from '../../data/projects'
+import { projectProgress } from '../../data/insights'
 import calendarIcon from '../../assets/calendar/calendar.svg'
 import sortIcon from '../../assets/calendar/sort.svg'
 import menuDotsCard from '../../assets/calendar/menu-dots-card.svg'
@@ -17,21 +20,9 @@ import plusIcon from '../../assets/projects/plus.svg'
 
 type View = 'Day' | 'Week' | 'Month'
 
-const PROJECTS = [
-  { title: 'Mobile App Design', accent: 'border-l-[rgba(255,86,95,0.4)]' },
-  { title: 'Web Development', accent: 'border-l-white' },
-  { title: 'Mobile App Design', accent: 'border-l-[#fde68a]' },
-  { title: 'Brand Guidelines', accent: 'border-l-[rgba(255,86,95,0.4)]' },
-  { title: 'Marketing Website', accent: 'border-l-[#d9f99d]' },
-  { title: 'Analytics Dashboard', accent: 'border-l-[#bbf7d0]' },
-  { title: 'Onboarding Revamp', accent: 'border-l-[#fde68a]' },
-]
-const COUNTERS = [
-  { n: 4, bg: 'bg-[#cdeea9]' },
-  { n: 6, bg: 'bg-[#fb875a]' },
-  { n: 2, bg: 'bg-[#fbd93c]' },
-  { n: 1, bg: 'bg-[#ff565f]' },
-]
+const ACCENTS = ['border-l-[rgba(255,86,95,0.4)]', 'border-l-[#fde68a]', 'border-l-[#d9f99d]', 'border-l-[#bbf7d0]', 'border-l-[#c7d2fe]']
+/** Task counts per status, in board order: To do, In progress, In review, Done. */
+const STATUS_BG = ['bg-[#ff565f]', 'bg-[#fb875a]', 'bg-[#fbd93c]', 'bg-[#cdeea9]']
 
 const DAY_START = 8 // 8 AM
 const DAY_END = 18 // 6 PM
@@ -43,7 +34,9 @@ export function CalendarPage() {
   const meetings = useMeetings()
   const [anchor, setAnchor] = useState(() => new Date())
   const [view, setView] = useState<View>('Week')
-  const [selectedProject, setSelectedProject] = useState(1)
+  const projects = useProjects().filter((p) => p.status !== 'Completed')
+  const tasks = useTasks()
+  const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [scheduling, setScheduling] = useState(false)
   const [call, setCall] = useState<Meeting | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
@@ -56,7 +49,9 @@ export function CalendarPage() {
 
   const days =
     view === 'Day' ? [anchor] : Array.from({ length: 5 }, (_, i) => addDays(weekStart(anchor), i))
-  const visible = meetings.filter((m) => apps[m.app] && !(hideCancelled && m.status === 'Cancelled'))
+  const visible = meetings.filter(
+    (m) => apps[m.app] && !(hideCancelled && m.status === 'Cancelled') && (!selectedProject || m.projectId === selectedProject),
+  )
 
   const shift = (dir: number) =>
     setAnchor((a) => (view === 'Day' ? addDays(a, dir) : view === 'Week' ? addDays(a, dir * 7) : new Date(a.getFullYear(), a.getMonth() + dir, 1)))
@@ -77,7 +72,16 @@ export function CalendarPage() {
     <div className="mt-6 flex flex-col gap-4">
       <section aria-label="Ongoing projects" className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-[22px] leading-[1.4] font-semibold tracking-[-0.44px] text-black">Ongoing Projects</h1>
+          <div className="flex items-baseline gap-3">
+            <h1 className="text-[22px] leading-[1.4] font-semibold tracking-[-0.44px] text-black">Ongoing Projects</h1>
+            {selectedProject ? (
+              <button type="button" onClick={() => setSelectedProject(null)} className="cursor-pointer text-[13px] font-medium text-primary-dark hover:underline">
+                Showing {projects.find((p) => p.id === selectedProject)?.name} meetings · Show all
+              </button>
+            ) : (
+              <span className="text-[13px] text-grey-text">Select a project to filter meetings</span>
+            )}
+          </div>
           <div className="flex gap-1">
             {[-1, 1].map((dir) => (
               <button
@@ -93,42 +97,57 @@ export function CalendarPage() {
           </div>
         </div>
         <div ref={carousel} className="flex snap-x gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-          {PROJECTS.map((p, i) => {
-            const active = i === selectedProject
+          {projects.map((p, i) => {
+            const active = p.id === selectedProject
+            const own = tasks.filter((t) => t.projectId === p.id)
+            const comments = own.reduce((sum, t) => sum + t.comments, 0)
             return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setSelectedProject(i)}
-                aria-pressed={active}
-                className={`flex h-[200px] w-[224px] shrink-0 snap-start cursor-pointer flex-col rounded-[20px] border-l-[6px] p-4 text-left ${
-                  active ? 'border-l-white bg-primary' : `bg-white ${p.accent}`
+              <div
+                key={p.id}
+                className={`relative flex h-[200px] w-[224px] shrink-0 snap-start flex-col rounded-[20px] border-l-[6px] p-4 ${
+                  active ? 'border-l-white bg-primary' : `bg-white ${ACCENTS[i % ACCENTS.length]}`
                 }`}
               >
                 <span className="flex items-start justify-between">
-                  <span className="text-[12px] text-black">12 JUN 2025</span>
-                  <img src={menuDotsCard} alt="" width={18} height={18} className="rotate-90" />
+                  <span className="text-[12px] text-black uppercase">
+                    {p.endDate ? `Due ${formatShort(p.endDate)}` : 'No end date'} · {projectProgress(p.id, tasks)}%
+                  </span>
+                  <Link to={`/projects?project=${p.id}`} aria-label={`Open ${p.name} board`} className="relative z-10 -m-1 rounded p-1 hover:bg-black/5">
+                    <img src={menuDotsCard} alt="" width={18} height={18} className="rotate-90" />
+                  </Link>
                 </span>
-                <span className="mt-1.5 text-[15px] leading-[1.3] font-semibold tracking-[-0.3px] text-black">{p.title}</span>
-                <span className={`mt-2 line-clamp-3 text-[12px] leading-[1.35] ${active ? 'text-black/60' : 'text-black/50'}`}>
-                  Based on the user interview and competitor research, I came up with a design direction for review.
-                </span>
+                {/* The whole card toggles the meeting filter; the board link above sits on top of it. */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedProject(active ? null : p.id)}
+                  aria-pressed={active}
+                  title={active ? 'Show all meetings' : `Only show ${p.name} meetings`}
+                  className="mt-1.5 cursor-pointer text-left text-[15px] leading-[1.3] font-semibold tracking-[-0.3px] text-black after:absolute after:inset-0 after:rounded-[20px]"
+                >
+                  {p.name}
+                </button>
+                <span className={`mt-2 line-clamp-3 text-[12px] leading-[1.35] ${active ? 'text-black/60' : 'text-black/50'}`}>{p.description}</span>
                 <span className="mt-auto flex items-end justify-between">
                   <span className="flex items-center gap-1">
-                    <span className="flex">
-                      {COUNTERS.map((c, j) => (
-                        <span key={j} className={`-mr-2 flex size-6 items-center justify-center rounded-full border border-white text-[11px] font-semibold text-black last:mr-0 ${c.bg}`}>
-                          {c.n}
+                    <span className="flex" aria-label="Tasks by status">
+                      {STATUSES.map((s, j) => (
+                        <span
+                          key={s}
+                          title={`${own.filter((t) => t.status === s).length} ${s}`}
+                          className={`-mr-2 flex size-6 items-center justify-center rounded-full border border-white text-[11px] font-semibold text-black last:mr-0 ${STATUS_BG[j]}`}
+                        >
+                          {own.filter((t) => t.status === s).length}
                         </span>
                       ))}
                     </span>
-                    <span className="ml-1 text-[12px] font-medium text-black">Design Team</span>
+                    <span className="ml-1 max-w-[80px] truncate text-[12px] font-medium text-black">{p.type}</span>
                   </span>
-                  <span className="flex items-center gap-1 rounded-full bg-background px-1.5 py-0.5 text-[11px] font-semibold">
-                    <img src={chatDots} alt="" width={10} height={10} />5
+                  <span className="flex items-center gap-1 rounded-full bg-background px-1.5 py-0.5 text-[11px] font-semibold" title="Comments">
+                    <img src={chatDots} alt="" width={10} height={10} />
+                    {comments}
                   </span>
                 </span>
-              </button>
+              </div>
             )
           })}
         </div>

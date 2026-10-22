@@ -14,18 +14,20 @@ type TaskFormModalProps = {
   /** Pre-fills the form when editing; `status` alone pre-selects a column for a new task. */
   initial?: Partial<TaskDraft>
   editing?: boolean
+  /** Ids of people who can be assigned; defaults to everyone. */
+  people?: string[]
 }
 
-export function TaskFormModal({ open, onClose, onSave, initial, editing }: TaskFormModalProps) {
+export function TaskFormModal({ open, onClose, onSave, initial, editing, people }: TaskFormModalProps) {
   const titleId = useId()
   return (
     <Modal open={open} onClose={onClose} labelledBy={titleId} className="w-[560px] rounded-2xl">
-      <TaskForm titleId={titleId} onClose={onClose} onSave={onSave} initial={initial} editing={editing} />
+      <TaskForm titleId={titleId} onClose={onClose} onSave={onSave} initial={initial} editing={editing} people={people} />
     </Modal>
   )
 }
 
-function TaskForm({ titleId, onClose, onSave, initial, editing }: Omit<TaskFormModalProps, 'open'> & { titleId: string }) {
+function TaskForm({ titleId, onClose, onSave, initial, editing, people }: Omit<TaskFormModalProps, 'open'> & { titleId: string }) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [due, setDue] = useState<DateValue | undefined>(initial?.dueDate ? { start: initial.dueDate } : undefined)
   const [status, setStatus] = useState<Status | ''>(initial?.status ?? '')
@@ -68,7 +70,7 @@ function TaskForm({ titleId, onClose, onSave, initial, editing }: Omit<TaskFormM
         <MemberSelect
           label="Team Members"
           required
-          people={PEOPLE}
+          people={people ? PEOPLE.filter((p) => people.includes(p.id)) : PEOPLE}
           value={memberIds}
           onChange={setMemberIds}
           placeholder="Enter your team member"
