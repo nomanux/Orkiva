@@ -67,11 +67,32 @@ export function ProjectsPage() {
 
   const totals = taskTotals(tasks)
   const active = projects.filter((p) => p.status === 'Active').length
+  const onHold = projects.filter((p) => p.status === 'On Hold').length
   const stats = [
-    { label: 'Total Project', value: projects.length, percent: percent(active, projects.length), hint: `${active} active` },
-    { label: 'Total Task', value: totals.total, percent: percent(totals.pending, totals.total), hint: `${totals.pending} open` },
-    { label: 'Total Due Today', value: totals.dueToday, percent: percent(totals.dueToday, totals.pending), hint: `${totals.overdue} overdue` },
-    { label: 'Task Completed', value: totals.done, percent: percent(totals.done, totals.total), hint: 'of all tasks' },
+    {
+      label: 'Total Project',
+      value: projects.length,
+      hint: onHold ? `${active} active · ${onHold} on hold` : `${active} active`,
+      meter: { label: 'Active', percent: percent(active, projects.length), detail: `${active} of ${projects.length} projects are active` },
+    },
+    {
+      label: 'Total Task',
+      value: totals.total,
+      hint: `${totals.pending} open · ${totals.done} done`,
+      meter: { label: 'Still open', percent: percent(totals.pending, totals.total), detail: `${totals.pending} of ${totals.total} tasks are not done yet` },
+    },
+    {
+      label: 'Total Due Today',
+      value: totals.dueToday,
+      hint: `${totals.overdue} overdue`,
+      meter: { label: 'Of open tasks', percent: percent(totals.dueToday, totals.pending), detail: `${totals.dueToday} of ${totals.pending} open tasks are due today` },
+    },
+    {
+      label: 'Task Completed',
+      value: totals.done,
+      hint: `of ${totals.total} tasks`,
+      meter: { label: 'Completion', percent: percent(totals.done, totals.total), detail: `${totals.done} of ${totals.total} tasks are done` },
+    },
   ]
 
   const saveTask = (draft: TaskDraft) => {
@@ -170,6 +191,12 @@ export function ProjectsPage() {
               collapsed={collapsed.includes(status)}
               onToggle={() => setCollapsed((c) => (c.includes(status) ? c.filter((s) => s !== status) : [...c, status]))}
               onAdd={() => setTaskEditor({ mode: 'create', status })}
+              onDropTask={(id) => {
+                const task = tasks.find((t) => t.id === id)
+                if (!task || task.status === status) return
+                moveTask(id, status)
+                toast.show(`Moved to ${STATUS_LABEL[status]}`)
+              }}
             >
               {columnTasks.map((task) => (
                 <TaskCard

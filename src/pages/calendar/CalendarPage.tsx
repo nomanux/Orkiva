@@ -22,7 +22,8 @@ type View = 'Day' | 'Week' | 'Month'
 
 const ACCENTS = ['border-l-[rgba(255,86,95,0.4)]', 'border-l-[#fde68a]', 'border-l-[#d9f99d]', 'border-l-[#bbf7d0]', 'border-l-[#c7d2fe]']
 /** Task counts per status, in board order: To do, In progress, In review, Done. */
-const STATUS_BG = ['bg-[#ff565f]', 'bg-[#fb875a]', 'bg-[#fbd93c]', 'bg-[#cdeea9]']
+/** Neutral ramp, light → dark, so progress reads without extra hues. */
+const STATUS_BG = ['bg-[#efefef] text-black', 'bg-[#d9d9d9] text-black', 'bg-[#8c8c8c] text-white', 'bg-black text-white']
 
 const DAY_START = 8 // 8 AM
 const DAY_END = 18 // 6 PM
@@ -134,7 +135,7 @@ export function CalendarPage() {
                         <span
                           key={s}
                           title={`${own.filter((t) => t.status === s).length} ${s}`}
-                          className={`-mr-2 flex size-6 items-center justify-center rounded-full border border-white text-[11px] font-semibold text-black last:mr-0 ${STATUS_BG[j]}`}
+                          className={`-mr-2 flex size-6 items-center justify-center rounded-full border border-white text-[11px] font-semibold last:mr-0 ${STATUS_BG[j]}`}
                         >
                           {own.filter((t) => t.status === s).length}
                         </span>

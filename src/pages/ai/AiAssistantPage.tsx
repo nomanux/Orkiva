@@ -13,6 +13,10 @@ import {
 } from '../../data/assistant'
 import { useDismiss } from '../../hooks/useDismiss'
 import { firstName, useSession } from '../../data/session'
+import { useProjects } from '../../data/projects'
+import { DailyBrief } from '../../components/ai/DailyBrief'
+import { AttentionList } from '../../components/ai/AttentionList'
+import { formatToday } from '../../lib/dates'
 import avatar from '../../assets/dashboard/avatar-masud.png'
 import dashboardShot from '../../assets/projects/dashboard-shot.png'
 import menuDots from '../../assets/ai/menu-dots.svg'
@@ -53,7 +57,6 @@ import toolImages from '../../assets/ai/tool-images.png'
 import toolTranslate from '../../assets/ai/tool-translate.png'
 import toolVoice from '../../assets/ai/tool-voice.png'
 
-const WORKSPACES = ['Agency', 'Team', 'Personal', 'Marketing', 'Leads']
 const MODELS = ['Auto', 'Fast', 'Deep Research']
 
 const ACTION_STYLE = {
@@ -89,42 +92,55 @@ export function AiAssistantPage() {
 /* ---------- Start screen ---------- */
 
 function Home({ onAsk }: { onAsk: (prompt: string) => void }) {
-  const [workspace, setWorkspace] = useState('Team')
+  const projects = useProjects().filter((p) => p.status !== 'Completed')
+  const [focus, setFocus] = useState<string | null>(null)
+  const focused = projects.find((p) => p.id === focus)
   const actions = useQuickActions()
   const name = firstName(useSession().profile.name)
   const [adding, setAdding] = useState(false)
   const [newAction, setNewAction] = useState('')
+  const [greeting] = useState(() => {
+    const h = new Date().getHours()
+    return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
+  })
+  const prompts = focused
+    ? [`Status of ${focused.name}`, 'What’s overdue?', 'Plan my week', `create task: Review open items in ${focused.name}`]
+    : ['What’s overdue?', 'Plan my week', 'How is the team workload looking?', 'What are the risks?', 'create task: Review pricing page']
 
   return (
-    <div className="mt-6 flex flex-col gap-6">
-      <div>
-        <h1 className="text-[40px] leading-[1.2] font-semibold tracking-[-2px] text-black">Hello, {name}</h1>
-        <p className="text-[40px] leading-[1.2] font-semibold tracking-[-2px] text-black/25">How can I help you?</p>
+    <div className="mt-6 flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-6">
+        <div>
+          <h1 className="text-[36px] leading-[1.15] font-semibold tracking-[-1.6px] text-black">
+            {greeting}, {name}
+          </h1>
+          <p className="mt-1 text-[16px] text-grey-text">{formatToday()} · here’s what needs you, and anything you want to ask.</p>
+        </div>
+        <label className="flex shrink-0 items-center gap-2 text-[14px] text-grey-text">
+          Focus
+          <select
+            value={focus ?? ''}
+            onChange={(e) => setFocus(e.target.value || null)}
+            className="h-10 cursor-pointer rounded-full border border-stock bg-white px-4 text-[14px] font-medium text-ink outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">All projects</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
-      <section aria-label="Workspaces" className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-semibold text-black">Workspaces</h2>
-        <div role="radiogroup" className="flex flex-wrap gap-2.5">
-          {WORKSPACES.map((w) => (
-            <button
-              key={w}
-              type="button"
-              role="radio"
-              aria-checked={workspace === w}
-              onClick={() => setWorkspace(w)}
-              className={`h-10 cursor-pointer rounded-full border px-5 text-[14px] font-medium ${
-                workspace === w ? 'border-primary bg-primary text-black' : 'border-stock bg-transparent text-black/50 hover:text-black'
-              }`}
-            >
-              {w}
-            </button>
-          ))}
-        </div>
-      </section>
+      <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-start gap-5">
+        <DailyBrief projectId={focus} onAsk={onAsk} />
+        <AttentionList projectId={focus} onAsk={onAsk} />
+      </div>
 
-      <section aria-label="Quick actions" className="flex flex-col gap-5 rounded-[24px] border border-stock bg-white p-5">
+      <section aria-label="Quick actions" className="flex flex-col gap-4 rounded-[24px] bg-white p-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-[22px] font-semibold tracking-[-0.44px] text-black">Quick Action</h2>
+          <h2 className="text-[18px] font-semibold tracking-[-0.36px] text-black">Quick Actions</h2>
           <div className="flex gap-2">
             <button type="button" aria-label="Add quick action" onClick={() => setAdding(true)} className="flex size-9 cursor-pointer items-center justify-center rounded-md border border-stock hover:bg-background">
               <img src={plusIcon} alt="" width={18} height={18} />
@@ -141,16 +157,16 @@ function Home({ onAsk }: { onAsk: (prompt: string) => void }) {
               key={a.id}
               type="button"
               onClick={() => onAsk(a.title)}
-              className="relative flex h-[210px] cursor-pointer flex-col overflow-hidden rounded-[28px] bg-background p-5 text-left transition-colors hover:bg-stock/70"
+              className="relative flex h-[150px] cursor-pointer flex-col overflow-hidden rounded-[24px] bg-background p-4 text-left transition-colors hover:bg-stock/70"
             >
               <img src={ACTION_STYLE[a.kind].glow} alt="" width={119} height={124} className="pointer-events-none absolute -top-[22px] -left-[18px]" />
               <span className="flex items-start justify-between">
-                <span className="relative flex size-16 items-center justify-center rounded-[16px] border border-white bg-white/15 backdrop-blur-[5.5px]">
+                <span className="relative flex size-12 items-center justify-center rounded-[14px] border border-white bg-white/15 backdrop-blur-[5.5px]">
                   <img src={ACTION_STYLE[a.kind].icon} alt="" width={26} height={26} />
                 </span>
                 <img src={menuDotsLg} alt="" width={24} height={24} />
               </span>
-              <span className="mt-auto text-[20px] leading-[1.3] font-medium tracking-[-0.4px] text-black/55">{a.title}</span>
+              <span className="mt-auto text-[17px] leading-[1.3] font-medium tracking-[-0.3px] text-black/70">{a.title}</span>
               {a.faces && (
                 <span className="mt-2 flex">
                   {FACES.map((f, i) => (
@@ -169,7 +185,7 @@ function Home({ onAsk }: { onAsk: (prompt: string) => void }) {
                 setNewAction('')
                 setAdding(false)
               }}
-              className="flex h-[210px] flex-col justify-between rounded-[28px] border-2 border-dashed border-stock p-5"
+              className="flex h-[150px] flex-col justify-between rounded-[24px] border-2 border-dashed border-stock p-4"
             >
               <label className="text-[13px] font-medium text-grey-text" htmlFor="new-action">
                 New quick action
@@ -196,13 +212,26 @@ function Home({ onAsk }: { onAsk: (prompt: string) => void }) {
               type="button"
               aria-label="Add quick action"
               onClick={() => setAdding(true)}
-              className="flex h-[210px] cursor-pointer items-center justify-center rounded-[28px] bg-background/40 transition-colors hover:bg-background"
+              className="flex h-[150px] cursor-pointer items-center justify-center rounded-[24px] bg-background/40 transition-colors hover:bg-background"
             >
               <img src={plusLg} alt="" width={56} height={56} className="opacity-40" />
             </button>
           )}
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[13px] font-medium text-grey-text">Try asking:</span>
+          {prompts.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => onAsk(q)}
+              className="cursor-pointer rounded-full border border-stock px-3 py-1.5 text-[13px] hover:border-primary hover:bg-primary-soft"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
         <PromptBox onSubmit={onAsk} />
       </section>
     </div>

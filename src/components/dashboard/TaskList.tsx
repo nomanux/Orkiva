@@ -35,7 +35,7 @@ function StatusMeter({ status, progress }: { status: Status; progress: number })
           <span key={i} className={`h-[10px] w-[2px] rounded-[1px] ${i < progress ? fill : 'bg-track'}`} />
         ))}
       </div>
-      <span className="text-[11px] leading-[1.2] font-medium">{label}</span>
+      <span className="text-[12px] leading-[1.2] font-medium">{label}</span>
     </div>
   )
 }
@@ -142,7 +142,7 @@ export function TaskList() {
         </div>
       </div>
 
-      <div role="table" className="mt-[21px] flex flex-col gap-4">
+      <div role="table" className="mt-[18px] flex flex-col gap-3.5">
         <div role="row" className={COLUMNS}>
           {['Assignee', 'Project', 'Due', 'Status', 'Brief'].map((h) => (
             <span key={h} role="columnheader" className={HEADER_CELL}>
@@ -153,13 +153,13 @@ export function TaskList() {
         {tasks.map((task) => {
           const owner = personById(task.memberIds[0] ?? '')
           return (
-          <div key={task.id} role="row" className={`${COLUMNS} h-8 items-center`}>
+          <div key={task.id} role="row" className={`${COLUMNS} h-9 items-center`}>
             <div role="cell" className="flex items-center gap-2">
               <span className="relative size-8 shrink-0">
                 {owner && <img src={owner.avatar} alt="" width={32} height={32} className="rounded-full" />}
                 <img src={onlineDot} alt="" width={8} height={8} className="absolute top-[21px] left-[22px]" />
               </span>
-              <span className="flex min-w-0 flex-col gap-[2px] text-[12px] leading-[1.2] tracking-[-0.36px]">
+              <span className="flex min-w-0 flex-col gap-[2px] text-[13px] leading-[1.2] tracking-[-0.26px]">
                 <span className="truncate font-semibold">{owner?.name ?? 'Unassigned'}</span>
                 <span className="truncate text-black/40">{owner?.role}</span>
               </span>
@@ -168,12 +168,12 @@ export function TaskList() {
               role="cell"
               to={`/projects?project=${task.projectId}`}
               title={task.title}
-              className="flex min-w-0 flex-col gap-[2px] text-[12px] leading-[1.2] tracking-[-0.36px] hover:underline"
+              className="flex min-w-0 flex-col gap-[2px] text-[13px] leading-[1.2] tracking-[-0.26px] hover:underline"
             >
               <span className="truncate font-medium">{task.title}</span>
               <span className="truncate text-black/40">{projectById(task.projectId)?.name}</span>
             </Link>
-            <span role="cell" className="text-[12px] leading-[1.2] tracking-[-0.36px]">
+            <span role="cell" className="text-[13px] leading-[1.2] tracking-[-0.26px]">
               {task.dueDate ? formatShort(task.dueDate) : '—'}
             </span>
             <div role="cell">
@@ -190,7 +190,7 @@ export function TaskList() {
                 className="flex h-[26px] w-[93px] cursor-pointer items-center justify-between rounded-[4px] bg-primary px-2 py-[6px] hover:brightness-95"
               >
                 <img src={downloadIcon} alt="" width={12} height={12} />
-                <span className="text-[12px] leading-[1.2] tracking-[-0.36px]">Brief.txt</span>
+                <span className="text-[13px] leading-[1.2] tracking-[-0.26px]">Brief.txt</span>
               </button>
             </div>
           </div>

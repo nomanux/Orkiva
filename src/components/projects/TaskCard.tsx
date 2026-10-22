@@ -12,6 +12,9 @@ import paperclip from '../../assets/projects/paperclip.svg'
 import dashboardShot from '../../assets/projects/dashboard-shot.png'
 import ecommerceDot from '../../assets/projects/ecommerce-dot.svg'
 
+/** dataTransfer type carrying a task id between board columns. */
+export const TASK_DRAG_TYPE = 'application/x-orkiva-task'
+
 const SEGMENTS = 15
 const CHIP = 'flex items-center justify-center rounded-[6px] border border-stock'
 
@@ -19,6 +22,7 @@ type TaskCardProps = { task: Task; onEdit: () => void; onDelete: () => void; onM
 
 export function TaskCard({ task, onEdit, onDelete, onMove }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   useDismiss(menuRef, menuOpen, () => setMenuOpen(false))
   const members = task.memberIds.map(personById).filter((p) => !!p)
@@ -27,7 +31,17 @@ export function TaskCard({ task, onEdit, onDelete, onMove }: TaskCardProps) {
   const note = task.note && <p className="text-[14px] leading-[1.2] tracking-[-0.28px] text-black">{task.note}</p>
 
   return (
-    <article className="flex w-full flex-col gap-3 rounded-[26px] bg-background p-4">
+    <article
+      draggable={!menuOpen}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(TASK_DRAG_TYPE, task.id)
+        e.dataTransfer.effectAllowed = 'move'
+        setDragging(true)
+      }}
+      onDragEnd={() => setDragging(false)}
+      aria-roledescription="Draggable task"
+      className={`flex w-full cursor-grab flex-col gap-3 rounded-[26px] bg-background p-4 transition-opacity active:cursor-grabbing ${dragging ? 'opacity-40' : ''}`}
+    >
       <header className="flex items-center justify-between gap-2">
         {task.label ? (
           <p className="text-[14px] leading-[1.2] font-medium tracking-[-0.28px]">{task.label}</p>

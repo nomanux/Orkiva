@@ -122,7 +122,7 @@ export function FooterPrompt({ text, linkText, to }: { text: string; linkText: s
       style={NO_LIGATURES}
     >
       {text}
-      <Link to={to} className="text-primary hover:underline">
+      <Link to={to} className="text-primary-dark hover:underline">
         {linkText}
       </Link>
     </p>

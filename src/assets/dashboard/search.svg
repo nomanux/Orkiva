@@ -1,7 +1,7 @@
 <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="Linear / Search / Magnifer" clip-path="url(#clip0_0_4)">
-<circle id="Vector" cx="9.58333" cy="9.58333" r="7.91667" stroke="black" stroke-width="1.5"/>
-<path id="Vector_2" d="M15.4167 15.4167L18.3333 18.3333" stroke-width="1.5" stroke-linecap="round" stroke="black"/>
+<circle id="Vector" cx="9.58333" cy="9.58333" r="7.91667" stroke="#1E293B" stroke-width="1.5"/>
+<path id="Vector_2" d="M15.4167 15.4167L18.3333 18.3333" stroke-width="1.5" stroke-linecap="round" stroke="#1E293B"/>
 </g>
 <defs>
 <clipPath id="clip0_0_4">

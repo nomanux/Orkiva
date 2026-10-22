@@ -116,3 +116,65 @@ export function fileSize(name: string) {
 }
 
 export const monthName = (iso: string) => fromISO(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+export type Health = 'On track' | 'Behind' | 'At risk' | 'Done'
+
+/**
+ * Compares a project's completed share with how much of its timeline has passed.
+ * More than 10 points behind schedule (or anything overdue) is "Behind"; 25 points or several overdue tasks is "At risk".
+ */
+export function projectHealth(project: Project, tasks: Task[]) {
+  const own = tasks.filter((t) => t.projectId === project.id)
+  const progress = percent(own.filter((t) => t.status === 'Done').length, own.length)
+  const overdue = own.filter(isOverdue).length
+  let expected = 0
+  if (project.startDate && project.endDate) {
+    const span = daysUntil(project.endDate) - daysUntil(project.startDate)
+    expected = span > 0 ? Math.min(100, Math.max(0, Math.round((-daysUntil(project.startDate) / span) * 100))) : 100
+  }
+  const gap = expected - progress
+  const health: Health =
+    project.status === 'Completed' || (own.length > 0 && progress === 100)
+      ? 'Done'
+      : overdue > 1 || gap > 25
+        ? 'At risk'
+        : overdue > 0 || gap > 10
+          ? 'Behind'
+          : 'On track'
+  return { progress, expected, overdue, open: own.filter(isOpen).length, total: own.length, health }
+}
+
+/** Open tasks per person, busiest first. */
+export function workload(tasks: Task[]) {
+  const byPerson = new Map<string, { open: number; overdue: number; dueSoon: number }>()
+  for (const t of tasks.filter(isOpen)) {
+    for (const id of t.memberIds) {
+      const w = byPerson.get(id) ?? { open: 0, overdue: 0, dueSoon: 0 }
+      w.open++
+      if (isOverdue(t)) w.overdue++
+      else if (isDueWithin(t, 7)) w.dueSoon++
+      byPerson.set(id, w)
+    }
+  }
+  return [...byPerson].map(([personId, w]) => ({ personId, ...w })).sort((a, b) => b.open - a.open || b.overdue - a.overdue)
+}
+
+export type Activity = { id: string; kind: 'completed' | 'created'; date: string; task: Task }
+
+/** Latest task completions and additions, newest first (completions win ties). */
+export function recentActivity(tasks: Task[], limit = 6): Activity[] {
+  const events: Activity[] = tasks.flatMap((t) => [
+    ...(t.completedAt ? [{ id: `${t.id}-done`, kind: 'completed' as const, date: t.completedAt, task: t }] : []),
+    { id: `${t.id}-new`, kind: 'created' as const, date: t.createdAt, task: t },
+  ])
+  return events
+    .filter((e) => e.date <= toISO(new Date()))
+    .sort((a, b) => b.date.localeCompare(a.date) || (a.kind === 'completed' ? -1 : 1))
+    .slice(0, limit)
+}
+
+/** Share of finished tasks that were completed on or before their due date. */
+export function onTimeRate(tasks: Task[]) {
+  const done = tasks.filter((t) => t.status === 'Done' && t.completedAt && t.dueDate)
+  return percent(done.filter((t) => t.completedAt! <= t.dueDate!).length, done.length)
+}

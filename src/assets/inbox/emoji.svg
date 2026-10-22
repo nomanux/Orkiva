@@ -1,7 +1,7 @@
 <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="25.1613" height="25.1613" viewBox="0 0 25.1613 25.1613" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="happyemoji">
-<path id="Vector" d="M23.0318 12.5806C23.0318 18.3707 18.338 23.0645 12.5479 23.0645C6.7578 23.0645 2.06401 18.3707 2.06401 12.5806C2.06401 6.79056 6.7578 2.09677 12.5479 2.09677C18.338 2.09677 23.0318 6.79056 23.0318 12.5806Z" stroke-width="1.57258" stroke-linecap="round" stroke-linejoin="round" stroke="black" stroke-opacity="0.6"/>
-<path id="Vector_2" d="M7.55985 16.7742C8.66066 18.3573 10.5058 19.3952 12.5816 19.3952C14.6574 19.3952 16.4921 18.3573 17.6034 16.7742" stroke-width="1.57258" stroke-linecap="round" stroke-linejoin="round" stroke="black" stroke-opacity="0.6"/>
+<path id="Vector" d="M23.0318 12.5806C23.0318 18.3707 18.338 23.0645 12.5479 23.0645C6.7578 23.0645 2.06401 18.3707 2.06401 12.5806C2.06401 6.79056 6.7578 2.09677 12.5479 2.09677C18.338 2.09677 23.0318 6.79056 23.0318 12.5806Z" stroke-width="1.57258" stroke-linecap="round" stroke-linejoin="round" stroke="#1E293B" stroke-opacity="0.6"/>
+<path id="Vector_2" d="M7.55985 16.7742C8.66066 18.3573 10.5058 19.3952 12.5816 19.3952C14.6574 19.3952 16.4921 18.3573 17.6034 16.7742" stroke-width="1.57258" stroke-linecap="round" stroke-linejoin="round" stroke="#1E293B" stroke-opacity="0.6"/>
 <g id="Vector_3" opacity="0">
 </g>
 </g>

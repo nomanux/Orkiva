@@ -133,7 +133,7 @@ function rows(projectId: string, files: string[], list: Row[]): Task[] {
       attachments: files.slice(0, (title.length + i) % (files.length + 1)),
       // Never in the future: tasks due later were still created recently.
       createdAt: d(Math.min(-1 - (i % 6), due - 10 - (i % 4) * 3)),
-      completedAt: status === 'Done' ? d(due - (i % 3)) : undefined,
+      completedAt: status === 'Done' ? d(Math.min(0, i % 5 === 0 ? due + 2 : due - (i % 3))) : undefined,
       ...extra,
     }
   })

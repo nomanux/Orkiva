@@ -1,23 +1,52 @@
-import { AiAssistant } from '../components/dashboard/AiAssistant'
 import { MeetingNotes } from '../components/dashboard/MeetingNotes'
 import { ProjectDueList } from '../components/dashboard/ProjectDueList'
+import { ProjectHealth } from '../components/dashboard/ProjectHealth'
 import { ProjectOverview } from '../components/dashboard/ProjectOverview'
-import { EndedTaskCard, PendingTaskCard, TotalTaskCard } from '../components/dashboard/StatCards'
+import { RecentActivity } from '../components/dashboard/RecentActivity'
+import { JustCompletedCard, NextDeadlineCard } from '../components/dashboard/TaskHighlights'
 import { TaskList } from '../components/dashboard/TaskList'
 import { TaskStatistics } from '../components/dashboard/TaskStatistics'
-import { UploadCard } from '../components/dashboard/UploadCard'
+import { TeamWorkload } from '../components/dashboard/TeamWorkload'
+import { ProjectStatCard } from '../components/projects/ProjectStatCard'
 import { useTasks } from '../data/projects'
 import { useSession, shortName } from '../data/session'
-import { taskTotals } from '../data/insights'
+import { onTimeRate, percent, periodRange, taskTotals } from '../data/insights'
 
 export function Dashboard() {
   const { profile } = useSession()
-  const totals = taskTotals(useTasks())
+  const tasks = useTasks()
+  const totals = taskTotals(tasks)
+  const active = tasks.filter((t) => t.status === 'In Progress' || t.status === 'In Review').length
+  const projectCount = new Set(tasks.map((t) => t.projectId)).size
+  const [weekFrom, weekTo] = periodRange('week')
+  const doneThisWeek = tasks.filter((t) => t.completedAt && t.completedAt >= weekFrom && t.completedAt <= weekTo).length
+  const onTime = onTimeRate(tasks)
   const greeting = totals.overdue
     ? `${totals.overdue} task${totals.overdue > 1 ? 's are' : ' is'} overdue — let’s get back on track.`
     : totals.dueToday
       ? `${totals.dueToday} task${totals.dueToday > 1 ? 's' : ''} due today. Ready to conquer your projects?`
       : 'Ready to conquer your projects?'
+
+  const stats = [
+    {
+      label: 'Total Task',
+      value: totals.total,
+      hint: `across ${projectCount} projects`,
+      meter: { label: 'Completed', percent: percent(totals.done, totals.total), detail: `${totals.done} of ${totals.total} tasks are done` },
+    },
+    {
+      label: 'Pending Task',
+      value: totals.pending,
+      hint: `${totals.dueToday} due today · ${totals.overdue} overdue`,
+      meter: { label: 'In progress', percent: percent(active, totals.pending), detail: `${active} of ${totals.pending} open tasks are being worked on` },
+    },
+    {
+      label: 'Completed Task',
+      value: totals.done,
+      hint: `${doneThisWeek} finished this week`,
+      meter: { label: 'On time', percent: onTime, detail: `${onTime}% of finished tasks were completed by their due date` },
+    },
+  ]
 
   return (
     <>
@@ -29,17 +58,17 @@ export function Dashboard() {
       <div className="mt-[42px] flex gap-[10px]">
         <div className="flex min-w-0 flex-1 flex-col gap-[10px]">
           <div className="flex gap-[10px]">
-            <TotalTaskCard count={totals.total} />
-            <PendingTaskCard count={totals.pending} />
-            <EndedTaskCard count={totals.done} />
+            {stats.map((s) => (
+              <ProjectStatCard key={s.label} to="/projects" {...s} />
+            ))}
           </div>
           <div className="flex gap-[10px]">
             <ProjectOverview className="min-w-0 flex-[476]" />
             <div className="flex min-w-0 flex-[500] flex-col gap-[10px]">
               <TaskStatistics />
               <div className="flex gap-[10px]">
-                <UploadCard title="In Progress" />
-                <UploadCard title="Completed" />
+                <NextDeadlineCard />
+                <JustCompletedCard />
               </div>
             </div>
           </div>
@@ -50,8 +79,13 @@ export function Dashboard() {
         </div>
         <div className="flex w-[clamp(360px,27vw,460px)] shrink-0 flex-col gap-[10px]">
           <MeetingNotes />
-          <AiAssistant />
+          <TeamWorkload limit={6} className="flex-1" />
         </div>
+      </div>
+
+      <div className="mt-[10px] flex gap-[10px]">
+        <ProjectHealth />
+        <RecentActivity />
       </div>
     </>
   )

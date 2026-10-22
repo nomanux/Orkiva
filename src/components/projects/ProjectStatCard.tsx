@@ -1,42 +1,44 @@
+import { Link } from 'react-router'
 import arrowButton from '../../assets/projects/arrow-button.svg'
-import badgeDot from '../../assets/projects/badge-dot.svg'
 
-const COLUMNS = 21
-const HIGHLIGHT = 3 // black columns marking "now"
+/** What the bar measures: a short label, its share, and a full sentence for the tooltip. */
+export type StatMeter = { label: string; percent: number; detail: string }
 
-type ProjectStatCardProps = { label: string; value: number; percent: number; hint: string }
+type ProjectStatCardProps = { label: string; value: number; hint: string; meter: StatMeter; /** Makes the arrow a link. */ to?: string }
 
-/** Dot-matrix chart: green columns for `percent`, three black, the rest grey; the badge sits over the middle black column. */
-export function ProjectStatCard({ label, value, percent, hint }: ProjectStatCardProps) {
-  const filled = Math.round((percent / 100) * (COLUMNS - HIGHLIGHT))
-  const badgeColumn = filled + 1
-
+export function ProjectStatCard({ label, value, hint, meter, to }: ProjectStatCardProps) {
   return (
-    <article className="relative h-[143px] flex-1 overflow-hidden rounded-[15px] bg-white p-4">
+    <article className="relative flex h-[143px] min-w-0 flex-1 flex-col overflow-hidden rounded-[15px] bg-white p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-[16px] leading-[1.5] tracking-[-0.48px] text-grey-text">{label}</h2>
-        <img src={arrowButton} alt="" width={38} height={38} aria-hidden />
+        {to ? (
+          <Link to={to} aria-label={`Open ${label}`} className="rounded-full hover:brightness-95">
+            <img src={arrowButton} alt="" width={38} height={38} />
+          </Link>
+        ) : (
+          <img src={arrowButton} alt="" width={38} height={38} aria-hidden />
+        )}
       </div>
-      <p className="mt-[16px] text-[42px] leading-[1.2] font-bold tracking-[-2.52px]">{value}</p>
-      <p className="text-[12px] leading-[1.2] text-grey-text">{hint}</p>
-
-      <div className="absolute top-[93px] right-4 flex items-end gap-[2px]" aria-hidden>
-        {Array.from({ length: COLUMNS }, (_, c) => {
-          const tall = c >= filled && c < filled + HIGHLIGHT
-          const color = c < filled ? 'bg-primary' : tall ? 'bg-black' : 'bg-stock'
-          return (
-            <div key={c} className="flex flex-col gap-[2px]">
-              {Array.from({ length: tall ? 9 : 7 }, (_, r) => (
-                <span key={r} className={`block size-[2px] ${color}`} />
-              ))}
-            </div>
-          )
-        })}
-        <div className="absolute -top-[22px] flex w-[30px] flex-col items-center gap-[2px]" style={{ left: badgeColumn * 4 + 1 - 15 }}>
-          <span className="flex h-[15px] w-full items-center justify-center rounded-[10px] bg-primary text-[10px] leading-none font-semibold text-black">
-            {percent}%
-          </span>
-          <img src={badgeDot} alt="" width={4} height={4} className="-my-px" />
+      <div className="mt-auto flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[42px] leading-[1.1] font-bold tracking-[-2.52px]">{value}</p>
+          <p className="truncate text-[13px] leading-[1.2] text-grey-text">{hint}</p>
+        </div>
+        <div className="w-[46%] max-w-[170px] shrink-0 pb-px" title={meter.detail}>
+          <div className="flex items-baseline justify-between gap-2 text-[13px] leading-[1.2]">
+            <span className="truncate text-grey-text">{meter.label}</span>
+            <span className="font-semibold text-ink">{meter.percent}%</span>
+          </div>
+          <div
+            role="meter"
+            aria-label={meter.detail}
+            aria-valuenow={meter.percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="mt-1.5 h-[6px] overflow-hidden rounded-full bg-stock"
+          >
+            <div className="h-full rounded-full bg-primary" style={{ width: `${meter.percent}%` }} />
+          </div>
         </div>
       </div>
     </article>

@@ -70,7 +70,7 @@ export function VerifyCode() {
                 maxLength={1}
                 aria-label={`Digit ${i + 1}`}
                 placeholder="0"
-                className="h-16 w-full min-w-0 flex-1 rounded-lg border border-stroke-soft bg-white p-2 text-center text-[36px] font-bold text-primary caret-primary drop-shadow-[0px_1px_1px_rgba(16,24,40,0.05)] outline-none placeholder:text-stroke-soft focus:border-primary"
+                className="h-16 w-full min-w-0 flex-1 rounded-lg border border-stroke-soft bg-white p-2 text-center text-[36px] font-bold text-primary-dark caret-primary drop-shadow-[0px_1px_1px_rgba(16,24,40,0.05)] outline-none placeholder:text-stroke-soft focus:border-primary"
               />
               {i === SEPARATOR_AFTER && <span className="h-[5px] w-5 shrink-0 rounded-[4px] bg-dark-gray-50" aria-hidden />}
             </Fragment>

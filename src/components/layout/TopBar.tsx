@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router";
 import logo from "../../assets/brand/orkiva-logo.svg";
 import searchCircle from "../../assets/dashboard/search-circle.svg";
 import searchIcon from "../../assets/dashboard/search.svg";
-import settingsButton from "../../assets/dashboard/settings-button.svg";
+import bellIcon from "../../assets/settings/bell.svg";
 import avatar from "../../assets/dashboard/avatar-masud.png";
 import chevronDown from "../../assets/dashboard/chevron-down.svg";
 import { NAV_ITEMS } from "./navItems";
@@ -41,7 +41,7 @@ export function TopBar() {
 
   return (
     <header className="flex items-center justify-between">
-      <nav className="flex h-[54px] w-[714px] items-center rounded-[70px] bg-white pl-3">
+      <nav className="flex h-[54px] w-[714px] shrink-0 items-center rounded-[70px] bg-white pl-3">
         <Link
           to="/"
           className="flex w-[159px] items-center gap-3"
@@ -63,7 +63,7 @@ export function TopBar() {
                 end
                 className={({ isActive }) =>
                   `block rounded-[26px] px-4 py-[10px] text-[12px] leading-[1.2] font-medium tracking-[-0.36px] whitespace-nowrap text-black transition-colors ${
-                    isActive ? "bg-primary" : "bg-white hover:bg-background"
+                    isActive ? "bg-primary-soft font-semibold text-primary-ink" : "bg-white hover:bg-background"
                   }`
                 }
               >
@@ -74,14 +74,14 @@ export function TopBar() {
         </ul>
       </nav>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex">
+      <div className="ml-4 flex min-w-0 flex-1 items-center justify-end gap-2">
+        <div className="relative flex min-w-[150px] flex-1 justify-end">
           <button
             type="button"
             aria-haspopup="dialog"
             aria-expanded={panel === "search"}
             onClick={() => setPanel("search")}
-            className="flex h-[54px] w-[197px] cursor-pointer items-center rounded-[70px] bg-white p-[6px] text-left"
+            className="flex h-[54px] w-full max-w-[420px] cursor-pointer items-center rounded-[70px] bg-white p-[6px] text-left"
           >
             <span className="relative size-[42px] shrink-0">
               <img src={searchCircle} alt="" width={42} height={42} />
@@ -93,21 +93,21 @@ export function TopBar() {
                 className="absolute top-[11px] left-[11px]"
               />
             </span>
-            <span className="ml-3 text-[12px] leading-[1.2] font-medium tracking-[-0.24px] text-black/40">
-              Type Client Name or ID
+            <span className="ml-3 truncate text-[12px] leading-[1.2] font-medium tracking-[-0.24px] text-black/40">
+              Search projects, clients, tasks or people
             </span>
           </button>
           {panel === "search" && (
             <div
               ref={panelRef}
-              className="absolute top-[64.5px] right-[59px] z-50"
+              className="absolute top-[64.5px] right-0 z-50 w-full max-w-[420px] min-w-[360px]"
             >
               <SearchPopover onClose={closePanel} />
             </div>
           )}
         </div>
 
-        <div className="relative flex">
+        <div className="relative flex shrink-0">
           <button
             type="button"
             aria-label={
@@ -116,9 +116,9 @@ export function TopBar() {
             aria-haspopup="dialog"
             aria-expanded={panel === "notifications"}
             onClick={() => setPanel("notifications")}
-            className="relative size-[54px] cursor-pointer rounded-full"
+            className="relative flex size-[54px] cursor-pointer items-center justify-center rounded-full bg-white hover:bg-white/80"
           >
-            <img src={settingsButton} alt="" width={54} height={54} />
+            <img src={bellIcon} alt="" width={24} height={24} />
             {unread > 0 && (
               <span className="absolute top-1 right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-error px-1 text-[11px] leading-none font-semibold text-white ring-2 ring-background">
                 {unread}
@@ -132,7 +132,7 @@ export function TopBar() {
           )}
         </div>
 
-        <div ref={menuRef} className="relative">
+        <div ref={menuRef} className="relative shrink-0">
           <button
             type="button"
             aria-haspopup="menu"

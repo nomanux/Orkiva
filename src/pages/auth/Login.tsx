@@ -66,7 +66,7 @@ export function Login() {
               </span>
               Remember for 30 days
             </label>
-            <Link to="/forgot-password" className="text-primary hover:underline">
+            <Link to="/forgot-password" className="text-primary-dark hover:underline">
               Forgot password
             </Link>
           </div>

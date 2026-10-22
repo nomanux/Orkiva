@@ -69,7 +69,7 @@ export function SearchPopover({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div role="dialog" aria-label="Search" className="w-[400px] overflow-hidden rounded-2xl bg-white shadow-[0px_16px_32px_-1px_rgba(128,136,151,0.2)]">
+    <div role="dialog" aria-label="Search" className="w-full overflow-hidden rounded-2xl bg-white shadow-[0px_16px_32px_-1px_rgba(128,136,151,0.2)]">
       <label className="flex items-center gap-3 border-b border-gs-100 p-5">
         <img src={searchIcon} alt="" width={20} height={20} />
         <input

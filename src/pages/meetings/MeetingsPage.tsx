@@ -93,7 +93,7 @@ export function MeetingsPage() {
                 {next.date === today ? 'Today' : formatLong(next.date)} · {formatTime(next.start)} - {formatTime(next.end)}
               </p>
               <p className="line-clamp-2 text-[13px] text-white/70">{next.description}</p>
-              {projectName(next) && <p className="text-[12px] font-semibold text-primary">{projectName(next)}</p>}
+              {projectName(next) && <p className="text-[12px] font-semibold text-primary-dark">{projectName(next)}</p>}
               <AttendeeStack ids={next.attendeeIds} size={28} />
               <button type="button" onClick={() => setCall(next)} className="mt-1 flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[15px] font-semibold text-black hover:brightness-95">
                 <img src={videocamera} alt="" width={20} height={20} />

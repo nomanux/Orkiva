@@ -1,3 +1,4 @@
+import { AiLauncher } from './components/ai/AiLauncher'
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router'
 import { TopBar } from './components/layout/TopBar'
@@ -26,6 +27,7 @@ function AppLayout() {
     <div className="overflow-x-auto">
       <div className="w-full min-w-[1280px] px-6 pt-6 pb-[42px]">
         <TopBar />
+        <AiLauncher />
         <main>
           <Suspense fallback={<p className="mt-24 text-center text-[14px] text-grey-text">Loading…</p>}>
             <Outlet />
